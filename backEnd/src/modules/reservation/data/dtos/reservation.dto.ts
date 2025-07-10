@@ -37,7 +37,7 @@ export interface ReservationModel extends BaseDTO {
   isParked: boolean;
   isDeleted: boolean;
   createdBy: ObjectId;
-  rating:ObjectId;
+  rating: ObjectId;
 }
 
 const ReservationSchema = new Schema<ReservationModel>(

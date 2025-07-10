@@ -44,6 +44,8 @@ import {
     AreaChart,
     Area
 } from 'recharts';
+import { generateParkingOwnerDetailedReport, exportParkingOwnerDetailedReportCSV } from '../../../services/report.service';
+import axios from 'axios';
 
 const ParkingOwnerReport = () => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -56,6 +58,14 @@ const ParkingOwnerReport = () => {
     const [endDate, setEndDate] = useState('');
     const [selectedArea, setSelectedArea] = useState('all');
     const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('all');
+    const [parkingOwners, setParkingOwners] = useState([]);
+    const [loadingOwners, setLoadingOwners] = useState(false);
+
+    // API data states
+    const [reportData, setReportData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [selectedOwnerId, setSelectedOwnerId] = useState(''); // For API calls
 
     // Set default date range to current month
     useEffect(() => {
@@ -66,6 +76,79 @@ const ParkingOwnerReport = () => {
         setStartDate(firstDay.toISOString().split('T')[0]);
         setEndDate(lastDay.toISOString().split('T')[0]);
     }, []);
+
+    // Fetch report data
+    const fetchReportData = async () => {
+        if (!selectedOwnerId || !startDate || !endDate) return;
+        
+        setLoading(true);
+        setError(null);
+        
+        try {
+            // Convert date strings to ISO datetime format
+            const startDateTime = new Date(startDate + 'T00:00:00.000Z').toISOString();
+            const endDateTime = new Date(endDate + 'T23:59:59.999Z').toISOString();
+            
+            const response = await generateParkingOwnerDetailedReport(startDateTime, endDateTime, selectedOwnerId);
+            setReportData(response.data);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to fetch report data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch parking owners on component mount
+    useEffect(() => {
+        const fetchParkingOwners = async () => {
+            setLoadingOwners(true);
+            try {
+                const response = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_ADMIN_URL}/v1/users/list`,
+                    {
+                        withCredentials: true,
+                        params: {
+                            role: 'PARKING_OWNER',
+                            approvalStatus: 'true',
+                            isActive: 'true'
+                        }
+                    }
+                );
+                setParkingOwners(response.data.users || []);
+            } catch (err) {
+                console.error('Error fetching parking owners:', err);
+            } finally {
+                setLoadingOwners(false);
+            }
+        };
+
+        fetchParkingOwners();
+    }, []);
+
+    // Fetch data when owner or date range changes
+    useEffect(() => {
+        if (selectedOwnerId && startDate && endDate) {
+            fetchReportData();
+        }
+    }, [selectedOwnerId, startDate, endDate]);
+
+    // Handle CSV export
+    const handleExportCSV = async () => {
+        if (!selectedOwnerId || !startDate || !endDate) {
+            alert('Please select an owner and date range');
+            return;
+        }
+        
+        try {
+            // Convert date strings to ISO datetime format
+            const startDateTime = new Date(startDate + 'T00:00:00.000Z').toISOString();
+            const endDateTime = new Date(endDate + 'T23:59:59.999Z').toISOString();
+            
+            await exportParkingOwnerDetailedReportCSV(startDateTime, endDateTime, selectedOwnerId);
+        } catch (err) {
+            alert('Failed to export CSV');
+        }
+    };
 
     // Filter data based on date range and area
     const filterDataByDateRangeAndArea = (data, dateField = 'paymentDate') => {
@@ -96,545 +179,118 @@ const ParkingOwnerReport = () => {
         return filteredData;
     };
 
-    // Mock data in Sri Lankan format matching database collections
-    const mockData = {
-        // Parking Owner Profile (from User collection)
-        parkingOwner: {
-            firstName: 'Sunil',
-            lastName: 'Fernando',
-            email: 'sunil.fernando@findmyspot.com',
-            phoneNumber: '+94 77 345 6789',
-            nic: '1980123456789V',
-            address: {
-                line1: 'No. 45, Lake Road',
-                line2: 'Kandy',
-                city: 'Kandy',
-                district: 'Kandy',
-                province: 'Central Province'
-            },
-            profileImage: '/api/assets/owner-profile.jpg',
-            isActive: true,
-            approvalStatus: true
-        },
+    // Use real data from API only
+    const data = reportData || null;
 
-        // Reservation Payment Summary (from ReservationPayment collection)
-        reservationPayments: [
-            {
-                id: 'PAY001',
-                reservationId: 'RES001',
-                paymentAmount: 4800,
-                paymentDate: '2024-01-15T14:25:00',
-                paymentMethod: 'card',
-                referenceNumber: 'TXN123456789',
-                bankName: 'Commercial Bank',
-                branch: 'Kandy City',
-                cardNumber: '**** **** **** 1234',
-                paymentStatus: 'paid',
-                customerName: 'Kamal Perera',
-                parkingArea: 'Kandy City Center Parking',
-                parkingSlot: 'PS003'
-            },
-            {
-                id: 'PAY002',
-                reservationId: 'RES002',
-                paymentAmount: 2400,
-                paymentDate: '2024-01-15T16:00:00',
-                paymentMethod: 'cash',
-                referenceNumber: 'CASH001',
-                paymentStatus: 'pending',
-                customerName: 'Nimal Silva',
-                parkingArea: 'Kandy City Center Parking',
-                parkingSlot: 'PS002'
-            },
-            {
-                id: 'PAY003',
-                reservationId: 'RES003',
-                paymentAmount: 1600,
-                paymentDate: '2024-01-15T09:45:00',
-                paymentMethod: 'bank_transfer',
-                referenceNumber: 'BT789456123',
-                bankName: 'Bank of Ceylon',
-                branch: 'Kandy',
-                paymentStatus: 'paid',
-                customerName: 'Priya Rajapaksa',
-                parkingArea: 'Kandy City Center Parking',
-                parkingSlot: 'PS001'
-            },
-            {
-                id: 'PAY004',
-                reservationId: 'RES004',
-                paymentAmount: 3600,
-                paymentDate: '2024-01-14T12:30:00',
-                paymentMethod: 'card',
-                referenceNumber: 'TXN987654321',
-                bankName: 'Sampath Bank',
-                branch: 'Kandy',
-                cardNumber: '**** **** **** 5678',
-                paymentStatus: 'paid',
-                customerName: 'Anil Jayasuriya',
-                parkingArea: 'Kandy City Center Parking',
-                parkingSlot: 'PS005'
-            },
-            {
-                id: 'PAY005',
-                reservationId: 'RES005',
-                paymentAmount: 1200,
-                paymentDate: '2024-01-14T10:15:00',
-                paymentMethod: 'cash',
-                referenceNumber: 'CASH002',
-                paymentStatus: 'failed',
-                customerName: 'Samantha Perera',
-                parkingArea: 'Kandy City Center Parking',
-                parkingSlot: 'PS004'
-            },
-            {
-                id: 'PAY006',
-                reservationId: 'RES006',
-                paymentAmount: 5200,
-                paymentDate: '2024-01-20T11:30:00',
-                paymentMethod: 'card',
-                referenceNumber: 'TXN654321987',
-                bankName: 'Commercial Bank',
-                branch: 'Colombo Fort',
-                cardNumber: '**** **** **** 9012',
-                paymentStatus: 'paid',
-                customerName: 'Rajith Fernando',
-                parkingArea: 'Colombo Fort Parking',
-                parkingSlot: 'PS001'
-            },
-            {
-                id: 'PAY007',
-                reservationId: 'RES007',
-                paymentAmount: 3800,
-                paymentDate: '2024-01-22T15:45:00',
-                paymentMethod: 'bank_transfer',
-                referenceNumber: 'BT321654987',
-                bankName: 'Bank of Ceylon',
-                branch: 'Colombo Fort',
-                paymentStatus: 'paid',
-                customerName: 'Lakshmi Perera',
-                parkingArea: 'Colombo Fort Parking',
-                parkingSlot: 'PS003'
-            },
-            {
-                id: 'PAY008',
-                reservationId: 'RES008',
-                paymentAmount: 2800,
-                paymentDate: '2024-01-25T09:20:00',
-                paymentMethod: 'card',
-                referenceNumber: 'TXN147258369',
-                bankName: 'Sampath Bank',
-                branch: 'Galle Face',
-                cardNumber: '**** **** **** 3456',
-                paymentStatus: 'paid',
-                customerName: 'Dinesh Bandara',
-                parkingArea: 'Galle Face Parking',
-                parkingSlot: 'PS002'
-            },
-            {
-                id: 'PAY009',
-                reservationId: 'RES009',
-                paymentAmount: 4200,
-                paymentDate: '2024-01-28T14:10:00',
-                paymentMethod: 'cash',
-                referenceNumber: 'CASH003',
-                paymentStatus: 'pending',
-                customerName: 'Anjali Weerasinghe',
-                parkingArea: 'Negombo Beach Parking',
-                parkingSlot: 'PS001'
-            },
-            {
-                id: 'PAY010',
-                reservationId: 'RES010',
-                paymentAmount: 3400,
-                paymentDate: '2024-01-30T16:30:00',
-                paymentMethod: 'card',
-                referenceNumber: 'TXN963852741',
-                bankName: 'Commercial Bank',
-                branch: 'Kurunegala',
-                cardNumber: '**** **** **** 7890',
-                paymentStatus: 'paid',
-                customerName: 'Saman Kumara',
-                parkingArea: 'Kurunegala Town Parking',
-                parkingSlot: 'PS004'
-            }
-        ],
+    // Show loading state when no data is available
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+                <div className="flex items-center justify-center py-20">
+                    <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+                        <span className="text-gray-600 text-lg">Loading report data...</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-        // Subscription Payment Report (from SubscriptionPayment collection)
-        subscriptionPayments: [
-            {
-                id: 'SUB001',
-                parkingOwnerId: 'OWNER001',
-                parkingAreaId: 'PA001',
-                amount: 25000,
-                paymentStatus: 'SUCCESS',
-                paymentDate: '2024-01-01T10:00:00',
-                paymentMethod: 'BANK_TRANSFER',
-                paymentReference: 'SUB2024001',
-                paymentGateway: 'PAYHERE',
-                subscriptionStartDate: '2024-01-01T00:00:00',
-                subscriptionEndDate: '2024-12-31T23:59:59',
-                paymentDetails: {
-                    bankName: 'Commercial Bank',
-                    branch: 'Kandy City',
-                    referenceNumber: 'BT2024001'
-                },
-                parkingAreaName: 'Kandy City Center Parking'
-            },
-            {
-                id: 'SUB002',
-                parkingOwnerId: 'OWNER002',
-                parkingAreaId: 'PA002',
-                amount: 25000,
-                paymentStatus: 'PENDING',
-                paymentDate: '2024-01-05T14:30:00',
-                paymentMethod: 'CARD',
-                paymentReference: 'SUB2024002',
-                paymentGateway: 'PAYHERE',
-                subscriptionStartDate: '2024-01-05T00:00:00',
-                subscriptionEndDate: '2025-01-04T23:59:59',
-                paymentDetails: {
-                    cardNumber: '**** **** **** 1234',
-                    cardHolderName: 'Nimal Silva'
-                },
-                parkingAreaName: 'Colombo Fort Parking'
-            },
-            {
-                id: 'SUB003',
-                parkingOwnerId: 'OWNER003',
-                parkingAreaId: 'PA003',
-                amount: 25000,
-                paymentStatus: 'SUCCESS',
-                paymentDate: '2024-01-10T09:15:00',
-                paymentMethod: 'MOBILE_PAYMENT',
-                paymentReference: 'SUB2024003',
-                paymentGateway: 'PAYHERE',
-                subscriptionStartDate: '2024-01-10T00:00:00',
-                subscriptionEndDate: '2025-01-09T23:59:59',
-                paymentDetails: {
-                    mobileNumber: '+94 77 123 4567'
-                },
-                parkingAreaName: 'Galle Face Parking'
-            },
-            {
-                id: 'SUB004',
-                parkingOwnerId: 'OWNER004',
-                parkingAreaId: 'PA004',
-                amount: 25000,
-                paymentStatus: 'SUCCESS',
-                paymentDate: '2024-01-15T11:20:00',
-                paymentMethod: 'CARD',
-                paymentReference: 'SUB2024004',
-                paymentGateway: 'PAYHERE',
-                subscriptionStartDate: '2024-01-15T00:00:00',
-                subscriptionEndDate: '2025-01-14T23:59:59',
-                paymentDetails: {
-                    cardNumber: '**** **** **** 5678',
-                    cardHolderName: 'Kumar Sivapalan'
-                },
-                parkingAreaName: 'Jaffna City Parking'
-            },
-            {
-                id: 'SUB005',
-                parkingOwnerId: 'OWNER005',
-                parkingAreaId: 'PA005',
-                amount: 25000,
-                paymentStatus: 'FAILED',
-                paymentDate: '2024-01-20T16:45:00',
-                paymentMethod: 'CARD',
-                paymentReference: 'SUB2024005',
-                paymentGateway: 'PAYHERE',
-                paymentDetails: {
-                    cardNumber: '**** **** **** 9012',
-                    cardHolderName: 'Anjali Weerasinghe'
-                },
-                parkingAreaName: 'Negombo Beach Parking'
-            },
-            {
-                id: 'SUB006',
-                parkingOwnerId: 'OWNER006',
-                parkingAreaId: 'PA006',
-                amount: 25000,
-                paymentStatus: 'SUCCESS',
-                paymentDate: '2024-01-25T13:30:00',
-                paymentMethod: 'BANK_TRANSFER',
-                paymentReference: 'SUB2024006',
-                paymentGateway: 'PAYHERE',
-                subscriptionStartDate: '2024-01-25T00:00:00',
-                subscriptionEndDate: '2025-01-24T23:59:59',
-                paymentDetails: {
-                    bankName: 'Bank of Ceylon',
-                    branch: 'Kurunegala',
-                    referenceNumber: 'BT2024006'
-                },
-                parkingAreaName: 'Kurunegala Town Parking'
-            }
-        ],
+    // Show error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+                <div className="flex items-center justify-center py-20">
+                    <div className="text-center">
+                        <FaExclamationTriangle className="text-red-500 text-4xl mx-auto mb-4" />
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Report</h2>
+                        <p className="text-gray-600 mb-4">{error}</p>
+                        <button 
+                            onClick={() => fetchReportData()}
+                            className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-       
+    // Show empty state when no data is available
+    if (!data) {
+        return (
+            <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                        Parking Owner Reports
+                    </h1>
+                    <p className="text-gray-600">
+                        Comprehensive analytics and financial reports for parking owners
+                    </p>
+                </div>
 
-        // Most Booked Parking Areas
-        mostBookedAreas: [
-            {
-                areaId: 'PA001',
-                areaName: 'Kandy City Center Parking',
-                totalBookings: 189,
-                totalRevenue: 125000,
-                averageRating: 4.7,
-                location: 'Kandy, Central Province',
-                ownerName: 'Sunil Fernando'
-            },
-            {
-                areaId: 'PA002',
-                areaName: 'Colombo Fort Parking',
-                totalBookings: 245,
-                totalRevenue: 180000,
-                averageRating: 4.5,
-                location: 'Colombo, Western Province',
-                ownerName: 'Nimal Silva'
-            },
-            {
-                areaId: 'PA003',
-                areaName: 'Galle Face Parking',
-                totalBookings: 167,
-                totalRevenue: 95000,
-                averageRating: 4.8,
-                location: 'Colombo, Western Province',
-                ownerName: 'Priya Rajapaksa'
-            },
-            {
-                areaId: 'PA004',
-                areaName: 'Jaffna City Parking',
-                totalBookings: 89,
-                totalRevenue: 65000,
-                averageRating: 4.3,
-                location: 'Jaffna, Northern Province',
-                ownerName: 'Kumar Sivapalan'
-            },
-            {
-                areaId: 'PA005',
-                areaName: 'Negombo Beach Parking',
-                totalBookings: 156,
-                totalRevenue: 112000,
-                averageRating: 4.6,
-                location: 'Negombo, Western Province',
-                ownerName: 'Anjali Weerasinghe'
-            },
-            {
-                areaId: 'PA006',
-                areaName: 'Kurunegala Town Parking',
-                totalBookings: 134,
-                totalRevenue: 89000,
-                averageRating: 4.4,
-                location: 'Kurunegala, North Western Province',
-                ownerName: 'Dinesh Bandara'
-            }
-        ],
+                {/* Owner Selection and Controls */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Select Parking Owner
+                                </label>
+                                <select
+                                    value={selectedOwnerId}
+                                    onChange={(e) => setSelectedOwnerId(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    disabled={loadingOwners}
+                                >
+                                    <option value="">Select an owner...</option>
+                                    {loadingOwners ? (
+                                        <option value="" disabled>Loading owners...</option>
+                                    ) : (
+                                        parkingOwners.map((owner) => (
+                                            <option key={owner._id} value={owner._id}>
+                                                {owner.firstName} {owner.lastName}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Date Range
+                                </label>
+                                <div className="flex space-x-2">
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    />
+                                    <span className="flex items-center text-gray-500">to</span>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-        // Highest Revenue Generating Parking Areas
-        highestRevenueAreas: [
-            {
-                areaId: 'PA002',
-                areaName: 'Colombo Fort Parking',
-                totalRevenue: 180000,
-                monthlyRevenue: 45000,
-                totalBookings: 245,
-                averageRating: 4.5,
-                location: 'Colombo, Western Province',
-                ownerName: 'Nimal Silva',
-                growth: 15.2
-            },
-            {
-                areaId: 'PA001',
-                areaName: 'Kandy City Center Parking',
-                totalRevenue: 125000,
-                monthlyRevenue: 32000,
-                totalBookings: 189,
-                averageRating: 4.7,
-                location: 'Kandy, Central Province',
-                ownerName: 'Sunil Fernando',
-                growth: 12.8
-            },
-            {
-                areaId: 'PA005',
-                areaName: 'Negombo Beach Parking',
-                totalRevenue: 112000,
-                monthlyRevenue: 28000,
-                totalBookings: 156,
-                averageRating: 4.6,
-                location: 'Negombo, Western Province',
-                ownerName: 'Anjali Weerasinghe',
-                growth: 18.5
-            },
-            {
-                areaId: 'PA003',
-                areaName: 'Galle Face Parking',
-                totalRevenue: 95000,
-                monthlyRevenue: 24000,
-                totalBookings: 167,
-                averageRating: 4.8,
-                location: 'Colombo, Western Province',
-                ownerName: 'Priya Rajapaksa',
-                growth: 11.3
-            },
-            {
-                areaId: 'PA006',
-                areaName: 'Kurunegala Town Parking',
-                totalRevenue: 89000,
-                monthlyRevenue: 22000,
-                totalBookings: 134,
-                averageRating: 4.4,
-                location: 'Kurunegala, North Western Province',
-                ownerName: 'Dinesh Bandara',
-                growth: 9.7
-            },
-            {
-                areaId: 'PA004',
-                areaName: 'Jaffna City Parking',
-                totalRevenue: 65000,
-                monthlyRevenue: 16000,
-                totalBookings: 89,
-                averageRating: 4.3,
-                location: 'Jaffna, Northern Province',
-                ownerName: 'Kumar Sivapalan',
-                growth: 7.2
-            }
-        ],
-
-        // Parking Area Wise Ratings
-        parkingAreaRatings: [
-            {
-                areaId: 'PA003',
-                areaName: 'Galle Face Parking',
-                averageRating: 4.8,
-                totalReviews: 167,
-                fiveStar: 120,
-                fourStar: 35,
-                threeStar: 10,
-                twoStar: 2,
-                oneStar: 0,
-                location: 'Colombo, Western Province',
-                ownerName: 'Priya Rajapaksa'
-            },
-            {
-                areaId: 'PA001',
-                areaName: 'Kandy City Center Parking',
-                averageRating: 4.7,
-                totalReviews: 189,
-                fiveStar: 130,
-                fourStar: 45,
-                threeStar: 12,
-                twoStar: 2,
-                oneStar: 0,
-                location: 'Kandy, Central Province',
-                ownerName: 'Sunil Fernando'
-            },
-            {
-                areaId: 'PA005',
-                areaName: 'Negombo Beach Parking',
-                averageRating: 4.6,
-                totalReviews: 156,
-                fiveStar: 100,
-                fourStar: 40,
-                threeStar: 12,
-                twoStar: 3,
-                oneStar: 1,
-                location: 'Negombo, Western Province',
-                ownerName: 'Anjali Weerasinghe'
-            },
-            {
-                areaId: 'PA002',
-                areaName: 'Colombo Fort Parking',
-                averageRating: 4.5,
-                totalReviews: 245,
-                fiveStar: 150,
-                fourStar: 70,
-                threeStar: 20,
-                twoStar: 4,
-                oneStar: 1,
-                location: 'Colombo, Western Province',
-                ownerName: 'Nimal Silva'
-            },
-            {
-                areaId: 'PA006',
-                areaName: 'Kurunegala Town Parking',
-                averageRating: 4.4,
-                totalReviews: 134,
-                fiveStar: 80,
-                fourStar: 35,
-                threeStar: 15,
-                twoStar: 3,
-                oneStar: 1,
-                location: 'Kurunegala, North Western Province',
-                ownerName: 'Dinesh Bandara'
-            },
-            {
-                areaId: 'PA004',
-                areaName: 'Jaffna City Parking',
-                averageRating: 4.3,
-                totalReviews: 89,
-                fiveStar: 50,
-                fourStar: 25,
-                threeStar: 10,
-                twoStar: 3,
-                oneStar: 1,
-                location: 'Jaffna, Northern Province',
-                ownerName: 'Kumar Sivapalan'
-            }
-        ],
-
-        // Key metrics
-        metrics: {
-            totalRevenue: 465000,
-            monthlyRevenue: 125000,
-            totalPayments: 1240,
-            successfulPayments: 1180,
-            failedPayments: 45,
-            pendingPayments: 15,
-            activeSubscriptions: 3,
-            totalParkingAreas: 4,
-            totalSlots: 24,
-            averageRating: 4.6
-        },
-
-        // Revenue data for charts
-        revenueData: [
-            { month: 'Jan', revenue: 42000, bookings: 28 },
-            { month: 'Feb', revenue: 38000, bookings: 25 },
-            { month: 'Mar', revenue: 45000, bookings: 30 },
-            { month: 'Apr', revenue: 52000, bookings: 35 },
-            { month: 'May', revenue: 48000, bookings: 32 },
-            { month: 'Jun', revenue: 55000, bookings: 37 },
-            { month: 'Jul', revenue: 51000, bookings: 34 },
-            { month: 'Aug', revenue: 58000, bookings: 39 },
-            { month: 'Sep', revenue: 54000, bookings: 36 },
-            { month: 'Oct', revenue: 62000, bookings: 42 },
-            { month: 'Nov', revenue: 59000, bookings: 40 },
-            { month: 'Dec', revenue: 68000, bookings: 46 }
-        ],
-
-        // Payment status distribution
-        paymentStatusData: [
-            { name: 'Successful', value: 1180, fill: '#10b981' },
-            { name: 'Failed', value: 45, fill: '#ef4444' },
-            { name: 'Pending', value: 15, fill: '#f59e0b' }
-        ],
-
-        // Payment method distribution
-        paymentMethodData: [
-            { name: 'Card', value: 650, fill: '#0891b2' },
-            { name: 'Bank Transfer', value: 420, fill: '#0ea5e9' },
-            { name: 'Cash', value: 120, fill: '#06b6d4' },
-            { name: 'Mobile Payment', value: 50, fill: '#0891b2' }
-        ],
-
-        // Subscription status data
-        subscriptionStatusData: [
-            { name: 'Active', value: 3, fill: '#10b981' },
-            { name: 'Expired', value: 1, fill: '#ef4444' },
-            { name: 'Pending', value: 1, fill: '#f59e0b' }
-        ]
-    };
+                    <div className="mt-8 text-center">
+                        <FaChartLine className="text-gray-400 text-4xl mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
+                        <p className="text-gray-600 mb-4">
+                            Please select a parking owner and date range to view the report.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -782,7 +438,7 @@ const ParkingOwnerReport = () => {
                             className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                         >
                             <option value="all">All Areas</option>
-                            {mockData.mostBookedAreas.map((area) => (
+                            {(data?.mostBookedAreas || []).map((area) => (
                                 <option key={area.areaId} value={area.areaName}>
                                     {area.areaName}
                                 </option>
@@ -857,13 +513,94 @@ const ParkingOwnerReport = () => {
                 </div>
             </div>
 
+            {/* Owner Selection and Controls */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                    <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Select Parking Owner
+                            </label>
+                            <select
+                                value={selectedOwnerId}
+                                onChange={(e) => setSelectedOwnerId(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                disabled={loadingOwners}
+                            >
+                                <option value="">Select an owner...</option>
+                                {loadingOwners ? (
+                                    <option value="" disabled>Loading owners...</option>
+                                ) : (
+                                    parkingOwners.map((owner) => (
+                                        <option key={owner._id} value={owner._id}>
+                                            {owner.firstName} {owner.lastName}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Date Range
+                            </label>
+                            <div className="flex space-x-2">
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                />
+                                <span className="flex items-center text-gray-500">to</span>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={handleExportCSV}
+                            disabled={!selectedOwnerId || loading}
+                            className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        >
+                            <FaFileExport />
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Loading and Error States */}
+                {loading && (
+                    <div className="mt-4 flex items-center justify-center py-8">
+                        <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-cyan-600"></div>
+                            <span className="text-gray-600">Loading report data...</span>
+                        </div>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-2">
+                            <FaExclamationTriangle className="text-red-500" />
+                            <span className="text-red-700">{error}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Quick Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                            <p className="text-xl font-bold text-gray-900">{formatCurrency(mockData.metrics.totalRevenue)}</p>
+                            <p className="text-xl font-bold text-gray-900">{formatCurrency(data?.metrics?.totalRevenue || 0)}</p>
                         </div>
                         <div className="p-3 bg-cyan-100 rounded-lg">
                             <FaMoneyBillWave className="text-cyan-600 text-lg" />
@@ -879,7 +616,7 @@ const ParkingOwnerReport = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Successful Payments</p>
-                            <p className="text-xl font-bold text-gray-900">{mockData.metrics.successfulPayments}</p>
+                            <p className="text-xl font-bold text-gray-900">{data?.metrics?.successfulPayments || 0}</p>
                         </div>
                         <div className="p-3 bg-green-100 rounded-lg">
                             <FaCheckCircle className="text-green-600 text-lg" />
@@ -895,7 +632,7 @@ const ParkingOwnerReport = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Active Subscriptions</p>
-                            <p className="text-xl font-bold text-gray-900">{mockData.metrics.activeSubscriptions}</p>
+                            <p className="text-xl font-bold text-gray-900">{data?.metrics?.activeSubscriptions || 0}</p>
                         </div>
                         <div className="p-3 bg-blue-100 rounded-lg">
                             <FaCreditCard className="text-blue-600 text-lg" />
@@ -911,7 +648,7 @@ const ParkingOwnerReport = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-                            <p className="text-xl font-bold text-gray-900">{mockData.metrics.averageRating}</p>
+                            <p className="text-xl font-bold text-gray-900">{data?.metrics?.averageRating || 0}</p>
                         </div>
                         <div className="p-3 bg-yellow-100 rounded-lg">
                             <FaStar className="text-yellow-600 text-lg" />
@@ -971,7 +708,7 @@ const ParkingOwnerReport = () => {
                                         </div>
                                     </div>
                                     <ResponsiveContainer width="100%" height={250}>
-                                        <AreaChart data={mockData.revenueData}>
+                                        <AreaChart data={data?.revenueData || []}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                                             <XAxis dataKey="month" stroke="#6b7280" />
                                             <YAxis stroke="#6b7280" />
@@ -996,7 +733,7 @@ const ParkingOwnerReport = () => {
                                     <ResponsiveContainer width="100%" height={250}>
                                         <PieChart>
                                             <Pie
-                                                data={mockData.paymentStatusData}
+                                                data={data?.paymentStatusData || []}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={40}
@@ -1004,7 +741,7 @@ const ParkingOwnerReport = () => {
                                                 paddingAngle={5}
                                                 dataKey="value"
                                             >
-                                                {mockData.paymentStatusData.map((entry, index) => (
+                                                {(data?.paymentStatusData || []).map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={entry.fill} />
                                                 ))}
                                             </Pie>
@@ -1012,7 +749,7 @@ const ParkingOwnerReport = () => {
                                         </PieChart>
                                     </ResponsiveContainer>
                                     <div className="flex justify-center space-x-4 mt-4">
-                                        {mockData.paymentStatusData.map((item, index) => (
+                                        {(data?.paymentStatusData || []).map((item, index) => (
                                             <div key={index} className="flex items-center text-sm">
                                                 <div 
                                                     className="w-3 h-3 rounded-full mr-2" 
@@ -1029,7 +766,7 @@ const ParkingOwnerReport = () => {
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Most Booked Parking Areas</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {mockData.mostBookedAreas.map((area) => (
+                                    {(data?.mostBookedAreas || []).map((area) => (
                                         <div key={area.areaId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                             <div className="flex items-center justify-between mb-3">
                                                 <FaParking className="text-cyan-600 text-xl" />
@@ -1098,7 +835,7 @@ const ParkingOwnerReport = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {filterDataByDateRangeAndArea(mockData.reservationPayments).map((payment) => (
+                                        {filterDataByDateRangeAndArea(data?.reservationPayments || []).map((payment) => (
                                             <tr key={payment.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-4 text-sm font-medium text-gray-900">{payment.id}</td>
                                                 <td className="px-4 py-4 text-sm text-gray-900">{payment.customerName}</td>
@@ -1158,7 +895,7 @@ const ParkingOwnerReport = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {filterDataByDateRangeAndArea(mockData.subscriptionPayments, 'paymentDate').map((subscription) => (
+                                        {filterDataByDateRangeAndArea(data?.subscriptionPayments || [], 'paymentDate').map((subscription) => (
                                             <tr key={subscription.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-4 text-sm font-medium text-gray-900">{subscription.id}</td>
                                                 <td className="px-4 py-4 text-sm text-gray-900">{subscription.parkingAreaName}</td>
@@ -1202,7 +939,7 @@ const ParkingOwnerReport = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {mockData.highestRevenueAreas.map((area) => (
+                                        {(data?.highestRevenueAreas || []).map((area) => (
                                             <tr key={area.areaId} className="hover:bg-gray-50">
                                                 <td className="px-4 py-4 text-sm font-medium text-gray-900">{area.areaName}</td>
                                                 <td className="px-4 py-4 text-sm font-medium text-gray-900">{formatCurrency(area.totalRevenue)}</td>
@@ -1236,7 +973,7 @@ const ParkingOwnerReport = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {mockData.parkingAreaRatings.map((area) => (
+                                        {(data?.parkingAreaRatings || []).map((area) => (
                                             <tr key={area.areaId} className="hover:bg-gray-50">
                                                 <td className="px-4 py-4 text-sm font-medium text-gray-900">{area.areaName}</td>
                                                 <td className="px-4 py-4 text-sm font-medium text-gray-900">{area.averageRating}</td>

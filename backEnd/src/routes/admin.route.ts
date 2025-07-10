@@ -8,6 +8,7 @@ import parkingAreaAdminRouter from '@/modules/parkingArea/routes/admin/v1/parkin
 import parkingSlotAdminRouter from '@/modules/parkingArea/routes/admin/v1/parkingSlotAdminRoute';
 import subscriptionPaymentAdminRouter from '@/modules/parkingSubscriptionFee/routes/admin/v1/subscriptionPaymentAdminRoute';
 import reservationAdminRouter from '../modules/reservation/routes/admin/v1/reservation.admin.router';
+import reportAdminRouter from '@/modules/report/routes/admin/v1/report.routes';
 
 const adminRouter: Router = Router();
 adminRouter.use('/v1/users', userAdminRouter);
@@ -21,5 +22,6 @@ adminRouter.use('/v1/parking-area', parkingAreaAdminRouter);
 adminRouter.use('/v1/parking-slot', parkingSlotAdminRouter);
 adminRouter.use('/v1/subscription-payment', subscriptionPaymentAdminRouter);
 adminRouter.use('/v1/reservation', reservationAdminRouter);
+adminRouter.use('/v1/reports', reportAdminRouter);
 
 export default adminRouter;

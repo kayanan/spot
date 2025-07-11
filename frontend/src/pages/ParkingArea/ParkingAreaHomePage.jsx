@@ -4,6 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 import ParkingAreaList from "../User/ParkingOwner/ParkingArea/ParkingAreaList";
 
@@ -22,14 +23,9 @@ const ParkingAreaHomePage = () => {
     const [submittingStaff, setSubmittingStaff] = useState(false);
     const [parkingOwner, setParkingOwner] = useState(null);
     const { authState } = useAuth();
+    const navigate = useNavigate();
     // Form states
-    const [parkingAreaForm, setParkingAreaForm] = useState({
-        name: '',
-        address: '',
-        totalSlots: '',
-        hourlyRate: '',
-        description: ''
-    });
+
 
     const [staffForm, setStaffForm] = useState({
         firstName: '',
@@ -86,33 +82,11 @@ const ParkingAreaHomePage = () => {
             setParkingOwner(response.data.user || []);
         } catch (error) {
             console.error('Error fetching parking owner:', error);
-    }
-    }
-    
-
-    const handleAddParkingArea = async (e) => {
-        e.preventDefault();
-        try {
-            const parkingAreaData = {
-                ...parkingAreaForm,
-                totalSlots: parseInt(parkingAreaForm.totalSlots),
-                hourlyRate: parseFloat(parkingAreaForm.hourlyRate),
-                isActive: true
-            };
-            
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/parking-area`, parkingAreaData);
-            if (response.data.success) {
-                toast.success('Parking area added successfully');
-                setShowAddModal(false);
-                setParkingAreaForm({ name: '', address: '', totalSlots: '', hourlyRate: '', description: '' });
-                fetchParkingAreas();
-            }
-        } catch (error) {
-            console.error('Error adding parking area:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to add parking area';
-            toast.error(errorMessage);
         }
-    };
+    }
+
+
+
 
     const handleAddStaff = async (e) => {
         e.preventDefault();
@@ -134,7 +108,7 @@ const ParkingAreaHomePage = () => {
                 isActive: true,
                 parkingAreaId: staffForm.parkingAreaId || undefined
             };
-            
+
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/signup`, staffData);
             if (response.data.status) {
                 toast.success('Staff member added successfully');
@@ -149,21 +123,6 @@ const ParkingAreaHomePage = () => {
         }
     };
 
-    const handleDeleteParkingArea = async (areaId) => {
-        if (window.confirm('Are you sure you want to delete this parking area?')) {
-            try {
-                const response = await axios.delete(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/parking-area/${areaId}`);
-                if (response.data.success) {
-                    toast.success('Parking area deleted successfully');
-                    fetchParkingAreas();
-                }
-            } catch (error) {
-                console.error('Error deleting parking area:', error);
-                const errorMessage = error.response?.data?.message || 'Failed to delete parking area';
-                toast.error(errorMessage);
-            }
-        }
-    };
 
     const handleDeleteStaff = async (staffId) => {
         if (window.confirm('Are you sure you want to delete this staff member?')) {
@@ -186,12 +145,7 @@ const ParkingAreaHomePage = () => {
         setActiveTab('staff');
     };
 
-    const filteredParkingAreas = parkingAreas.filter(area => {
-        const matchesSearch = area.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            area.address?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' || area.status === filterStatus;
-        return matchesSearch && matchesStatus;
-    });
+
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
@@ -220,22 +174,20 @@ const ParkingAreaHomePage = () => {
                     <nav className="flex space-x-8 px-6">
                         <button
                             onClick={() => setActiveTab('parking-areas')}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'parking-areas'
+                            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'parking-areas'
                                     ? 'border-cyan-500 text-cyan-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                                }`}
                         >
                             <FaMapMarkerAlt className="inline mr-2" />
                             Parking Areas
                         </button>
                         <button
                             onClick={() => setActiveTab('staff')}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'staff'
+                            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'staff'
                                     ? 'border-cyan-500 text-cyan-600'
                                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                                }`}
                         >
                             <FaUsers className="inline mr-2" />
                             Staff Members
@@ -338,9 +290,21 @@ const ParkingAreaHomePage = () => {
                         //         </div>
                         //     )}
                         // </div>
-                        <div>
-                          <ParkingAreaList parkingOwner={parkingOwner} userType="owner" />
+                        // <div>
+                        //   <ParkingAreaList parkingOwner={parkingOwner} userType="owner" />
+                        // </div>
+                        <div className="mt-8">
+                            <div className="flex gap-4 items-center mb-6">
+                                <h2 className="text-2xl font-bold">Parking Areas</h2>
+                                <button type="button" className="flex items-center gap-1 bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-md" onClick={() => navigate(`/parking-owner/spot-details`, { state: { ownerId: parkingOwner._id, userType: authState.privilege } })}>
+                                    <FaPlus className="mr-2" />
+                                    Add Parking Area
+                                </button>
+                            </div>
+                            <ParkingAreaList parkingOwner={parkingOwner} userType={authState.privilege} />
                         </div>
+
+
                     )}
 
                     {activeTab === 'staff' && (
@@ -431,7 +395,7 @@ const ParkingAreaHomePage = () => {
                                                                 <button className="text-blue-600 hover:text-blue-900">
                                                                     <FaEdit />
                                                                 </button>
-                                                                <button 
+                                                                <button
                                                                     onClick={() => handleDeleteStaff(staff._id)}
                                                                     className="text-red-600 hover:text-red-900"
                                                                 >
@@ -450,109 +414,6 @@ const ParkingAreaHomePage = () => {
                     )}
                 </div>
             </div>
-
-            {/* Add Parking Area Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-800">Add Parking Area</h2>
-                            <button
-                                onClick={() => setShowAddModal(false)}
-                                className="text-gray-500 hover:text-gray-700"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddParkingArea}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={parkingAreaForm.name}
-                                        onChange={(e) => setParkingAreaForm({...parkingAreaForm, name: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        placeholder="Enter parking area name"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Address
-                                    </label>
-                                    <textarea
-                                        required
-                                        value={parkingAreaForm.address}
-                                        onChange={(e) => setParkingAreaForm({...parkingAreaForm, address: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        placeholder="Enter address"
-                                        rows="3"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Total Slots
-                                        </label>
-                                        <input
-                                            type="number"
-                                            required
-                                            value={parkingAreaForm.totalSlots}
-                                            onChange={(e) => setParkingAreaForm({...parkingAreaForm, totalSlots: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Hourly Rate (LKR)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            required
-                                            value={parkingAreaForm.hourlyRate}
-                                            onChange={(e) => setParkingAreaForm({...parkingAreaForm, hourlyRate: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Description
-                                    </label>
-                                    <textarea
-                                        value={parkingAreaForm.description}
-                                        onChange={(e) => setParkingAreaForm({...parkingAreaForm, description: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        placeholder="Enter description (optional)"
-                                        rows="3"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end space-x-3 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddModal(false)}
-                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submittingParkingArea}
-                                    className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {submittingParkingArea ? 'Adding...' : 'Add Parking Area'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             {/* Add Staff Modal */}
             {showStaffModal && (
@@ -578,7 +439,7 @@ const ParkingAreaHomePage = () => {
                                             type="text"
                                             required
                                             value={staffForm.firstName}
-                                            onChange={(e) => setStaffForm({...staffForm, firstName: e.target.value})}
+                                            onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             placeholder="Enter first name"
                                         />
@@ -591,7 +452,7 @@ const ParkingAreaHomePage = () => {
                                             type="text"
                                             required
                                             value={staffForm.lastName}
-                                            onChange={(e) => setStaffForm({...staffForm, lastName: e.target.value})}
+                                            onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             placeholder="Enter last name"
                                         />
@@ -605,7 +466,7 @@ const ParkingAreaHomePage = () => {
                                         type="email"
                                         required
                                         value={staffForm.email}
-                                        onChange={(e) => setStaffForm({...staffForm, email: e.target.value})}
+                                        onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         placeholder="Enter email"
                                     />
@@ -618,7 +479,7 @@ const ParkingAreaHomePage = () => {
                                         type="tel"
                                         required
                                         value={staffForm.phone}
-                                        onChange={(e) => setStaffForm({...staffForm, phone: e.target.value})}
+                                        onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         placeholder="Enter phone number"
                                     />
@@ -631,7 +492,7 @@ const ParkingAreaHomePage = () => {
                                         type="password"
                                         required
                                         value={staffForm.password}
-                                        onChange={(e) => setStaffForm({...staffForm, password: e.target.value})}
+                                        onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         placeholder="Enter password"
                                     />
@@ -642,7 +503,7 @@ const ParkingAreaHomePage = () => {
                                     </label>
                                     <select
                                         value={staffForm.role}
-                                        onChange={(e) => setStaffForm({...staffForm, role: e.target.value})}
+                                        onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     >
                                         <option value="">Select role</option>
@@ -659,7 +520,7 @@ const ParkingAreaHomePage = () => {
                                     </label>
                                     <select
                                         value={staffForm.parkingAreaId}
-                                        onChange={(e) => setStaffForm({...staffForm, parkingAreaId: e.target.value})}
+                                        onChange={(e) => setStaffForm({ ...staffForm, parkingAreaId: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     >
                                         <option value="">Select parking area</option>

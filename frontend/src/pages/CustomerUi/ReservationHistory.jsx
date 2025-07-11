@@ -587,10 +587,100 @@ const ReservationHistory = () => {
     // Loading State
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading reservation history...</p>
+            <div className="min-h-screen bg-gray-50">
+                {/* Back Arrow */}
+                <button
+                    className="flex items-center gap-2 mb-4 text-white bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 font-semibold text-lg rounded-full px-4 py-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 px-4 pt-6"
+                    onClick={() => navigate('/customer-landing-page')}
+                    aria-label="Go to Home"
+                >
+                    <FaArrowLeft />
+                    <span>Back to Home</span>
+                </button>
+                
+                {/* Header Skeleton */}
+                <div className="bg-white shadow-sm border-b">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="py-6">
+                            <div className="h-8 bg-gray-200 rounded-lg w-64 mb-2 animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    {/* Filter Skeleton */}
+                    <div className="bg-white rounded-xl shadow-sm border mb-6">
+                        <div className="p-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="h-6 bg-gray-200 rounded w-20 animate-pulse"></div>
+                                <div className="h-8 bg-gray-200 rounded-lg w-24 animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Results Summary Skeleton */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                    </div>
+
+                    {/* Reservation Cards Skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+                            <div key={item} className="bg-white rounded-xl shadow-md border border-gray-100 p-4 animate-pulse">
+                                {/* Header Skeleton */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+                                        <div className="h-5 bg-gray-200 rounded-full w-20"></div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="h-6 bg-gray-200 rounded w-20 mb-1"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                                    </div>
+                                </div>
+
+                                {/* Info Rows Skeleton */}
+                                <div className="space-y-3 mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-40"></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-28"></div>
+                                    </div>
+                                </div>
+
+                                {/* Rating Section Skeleton */}
+                                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                                    </div>
+                                    <div className="h-8 bg-gray-200 rounded-lg w-full"></div>
+                                </div>
+
+                                {/* Footer Skeleton */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                                        <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                                    </div>
+                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -599,17 +689,37 @@ const ReservationHistory = () => {
     // Error State
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="text-red-500 text-6xl mb-4">⚠️</div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading History</h2>
-                    <p className="text-gray-600 mb-4">{error}</p>
-                    <button
-                        onClick={fetchReservations}
-                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                    >
-                        Try Again
-                    </button>
+            <div className="min-h-screen bg-gray-50">
+                {/* Back Arrow */}
+                <button
+                    className="flex items-center gap-2 mb-4 text-white bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 font-semibold text-lg rounded-full px-4 py-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 px-4 pt-6"
+                    onClick={() => navigate('/customer-landing-page')}
+                    aria-label="Go to Home"
+                >
+                    <FaArrowLeft />
+                    <span>Back to Home</span>
+                </button>
+                
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-8 text-center">
+                        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading History</h2>
+                        <p className="text-gray-600 mb-6">{error}</p>
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => navigate('/customer-landing-page')}
+                                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Go Back Home
+                            </button>
+                            <button
+                                onClick={fetchReservations}
+                                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 active:scale-95"
+                            >
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );

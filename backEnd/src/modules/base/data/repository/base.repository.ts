@@ -48,7 +48,7 @@ async function findAll<T>(
       queryBuilder = queryBuilder.populate({ path, select });
     });
   }
-
+  
   const items = await queryBuilder.exec();
   const totalCount = await model.countDocuments(query);
 

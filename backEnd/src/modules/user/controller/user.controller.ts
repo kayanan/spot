@@ -187,18 +187,35 @@ export const adminUpdateUser = async (
   res: Response
 ) => {
   try {
-    // Object.keys(req.body).forEach(key => {
-    //   if(req.body[key] instanceof Array){
-    //     req.body[key].forEach((item,index) => {
-    //       if(item.includes("{")){
-    //         req.body[key][index] = JSON.parse(item);
-    //       }
-    //     });
-    //   }
-    //   else if(req.body[key].includes("{")){
-    //     req.body[key] = JSON.parse(req.body[key]);
-    //   }
-    // });
+    try {
+      Object.keys(req.body).forEach(key => {
+        const value = req.body[key];
+  
+        // Parse boolean strings
+        if (value === 'true') {
+          req.body[key] = true;
+        } else if (value === 'false') {
+          req.body[key] = false;
+        }
+  
+        // Parse arrays or objects (stringified JSON)
+        else if (typeof value === 'string' && (value.trim().includes('[') || value.trim().includes('{'))) {
+          try {
+            const parsed = JSON.parse(value);
+            req.body[key] = parsed;
+          } catch {
+          }
+        }
+      });
+  
+     
+    } catch (error) {
+      console.error("Error parsing form data", error);
+      return res.status(400).json({ message: "Invalid form data" });
+    }
+   
+    
+    console.log(req.body,"req.body");
     
     const response: CreatedUpdatedResponse =
       await UserService.adminUpdateUser(

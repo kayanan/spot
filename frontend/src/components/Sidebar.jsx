@@ -22,6 +22,9 @@ import {
   HomeIcon,
 } from "@heroicons/react/outline";
 
+import { FaParking } from "react-icons/fa";
+
+
 import { useAuth } from "../context/AuthContext";
 
 // If you're not using Next.js or a framework requiring "use client", remove this line.
@@ -29,7 +32,7 @@ import { useAuth } from "../context/AuthContext";
 
 const Sidebar = ({ isOpen }) => {
   const { authState } = useAuth();
-  const privilegeList = authState?.privilegeList || [];
+  const privilege = authState?.privilege || "";
   const location = useLocation();
 
   // Track which menus are open using an object: { [menuName]: boolean }
@@ -37,38 +40,39 @@ const Sidebar = ({ isOpen }) => {
 
   // Define the navigation links, including children for "Branch Transactions"
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: ChartBarIcon },
-    { name: "Location Management", path: "/province", icon: MapIcon },
-    { name: "Subscription Management", path: "/parking-subscription-fee", icon: CalendarIcon },
+    { name: "Dashboard", path: "/dashboard", icon: ChartBarIcon, privilege: ["ADMIN", "PARKING_OWNER", "PARKING_MANAGER", "CUSTOMER"] },
+    { name: "Location Management", path: "/province", icon: MapIcon, privilege: ["ADMIN"] },
+    { name: "Subscription Management", path: "/parking-subscription-fee", icon: CalendarIcon, privilege: ["ADMIN"] },
     {
       name: "User Management",
       icon: UsersIcon,
-      //privilege: "View TempTransfer",
+      privilege: ["ADMIN"],
       children: [
-        { name: "Paking Owner", path: "/owner", icon: OfficeBuildingIcon },
-        { name: "Customers", path: "/customer", icon: UserCircleIcon },
-        { name: "Roles", path: "/role", icon: ShieldCheckIcon },
+        { name: "Paking Owner", path: "/owner", icon: OfficeBuildingIcon, privilege: ["ADMIN"] },
+        { name: "Customers", path: "/customer", icon: UserCircleIcon, privilege: ["ADMIN"] },
+        { name: "Roles", path: "/role", icon: ShieldCheckIcon, privilege: ["ADMIN"] },
       ],
     },
     {
       name: "Reports", icon: ChartBarIcon,
-     // privilege: "View TempTransfer",
+      privilege: ["ADMIN", "PARKING_OWNER"],
       children: [
-        { name: "Parking Payments", path: "/reports/parking-payments", icon: CashIcon },
-        { name: "Admin Report", path: "/reports/admin", icon: ChartBarIcon },
-        { name: "Parking Owner Report", path: "/reports/parking-owner", icon: ChartBarIcon },
+        { name: "Parking Payments", path: "/reports/parking-payments", icon: CashIcon, privilege: ["ADMIN", "PARKING_OWNER"] },
+        { name: "Admin Report", path: "/reports/admin", icon: ChartBarIcon, privilege: ["ADMIN"] },
+        { name: "Parking Owner Report", path: "/reports/parking-owner", icon: ChartBarIcon, privilege: ["ADMIN", "PARKING_OWNER"] },
 
       ],
     },
     {
       name: "Area Management", icon: LocationMarkerIcon,
-     // privilege: "View TempTransfer",
+      privilege: ["ADMIN", "PARKING_OWNER"],
       children: [
-        { name: "Parking Areas", path: "/parking-area-home", icon: MapIcon },
-        { name: "Staffs", path: "/parking-staff", icon: IdentificationIcon },
+        { name: "Parking Areas", privilege: ["ADMIN", "PARKING_OWNER"], path: "/parking-area-home", icon: MapIcon },
+        { name: "Staffs", privilege: ["ADMIN", "PARKING_OWNER"], path: "/parking-staff", icon: IdentificationIcon },
       ],
     },
-    { name: "Customer", path: "/customer-landing-page", icon: UserCircleIcon },
+    { name: "Parking Slot", path: `/parking-slot/${authState.user.userId}`, icon: FaParking, privilege: ["ADMIN", "PARKING_MANAGER", "PARKING_OWNER"] },
+    { name: "Customer", path: "/customer-landing-page", icon: UserCircleIcon, privilege: ["ADMIN",  "CUSTOMER"] },
 
   ];
 
@@ -116,7 +120,7 @@ const Sidebar = ({ isOpen }) => {
       <div className="flex flex-col w-full mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600">
         {navLinks
           // Filter top-level items by privilege
-          //.filter((link) => privilegeList.includes(link.privilege))
+          .filter((link) => link.privilege?.includes(privilege))
           .map((link) => {
             // If the link has children => sub-menu
             if (link.children && link.children.length > 0) {
@@ -170,7 +174,8 @@ const Sidebar = ({ isOpen }) => {
                         }`}
                     >
                       {link.children
-                        //.filter((sub) => privilegeList.includes(sub.privilege))
+                        //filter submenu by privilege
+                        .filter((sub) => sub.privilege?.includes(privilege))
                         .map((sub) => (
                           <NavLink
                             key={sub.name}

@@ -181,11 +181,11 @@ const Navbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     <>
       {/* Main Navbar */}
       <nav
-        className={`bg-gray-800 h-16 flex items-center fixed top-0 ${isSidebarOpen ? "left-64" : "left-20"
+        className={`bg-gray-800 h-16 flex items-center fixed top-0 ${authState.privilege === "CUSTOMER" ? "left-0" : isSidebarOpen ? "left-64" : "left-20"
           } right-0 z-30 transition-all duration-300 border-b border-gray-700`}
       >
         {/* Sidebar Toggle */}
-        <div className="flex items-center ml-4">
+        {authState.privilege !== "CUSTOMER" && (<div className="flex items-center ml-4">
           <button
             onClick={toggleSidebar}
             className="text-gray-400 hover:text-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-50 rounded-md p-1"
@@ -193,7 +193,7 @@ const Navbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
           >
             <MenuIcon className="h-6 w-6" />
           </button>
-        </div>
+        </div>)}
 
         {/* Date/Time */}
         <div className="flex-grow mx-4 text-center hidden md:block text-gray-300 font-medium">

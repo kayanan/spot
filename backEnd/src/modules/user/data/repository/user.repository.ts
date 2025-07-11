@@ -102,8 +102,8 @@ async function saveUser(
 
 async function findById(id: string): Promise<UserModel | null> {
   const user: UserModel | null = await UserDTO.findById(new mongoose.Types.ObjectId(id))
-    .populate('role', '_id type')
-    .select('-password -__v');
+    .populate('role', '_id city district province')
+    .select('-password -__v -createdAt -updatedAt -isDeleted -otp -otpExpiresAt ');
   return user as UserModel;
 }
 

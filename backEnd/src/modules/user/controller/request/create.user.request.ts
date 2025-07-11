@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongoose';
-import { CardDetail, Address, AccountDetail } from '../../data/dtos/user.dto';
+import { AccountDetail } from '../../data/dtos/user.dto';
 
 export interface UserRequest {
   firstName?: string;
@@ -22,15 +22,19 @@ export interface UpdateUserRequest extends UserRequest {
   lastName?: string;
   email?: string;
   nic?:string;
-  address?: Address;
+  line1:string;
+  line2:string;
+  district: string;
+  province: string;
+  zipCode: string;
   isActive?: boolean;
   isDeleted?: boolean;
   vehicle?:Array<string>;
   phoneNumber?: string;
   profileImage?: string;
-  bankDetails?: Array<CardDetail>;
+  bankDetails?: Array<AccountDetail>;
   accountDetails?: Array<AccountDetail>;
-  cardDetails?: Array<CardDetail>;
+  
 }
 
 export interface AdminUpdateUserRequest extends UserRequest {
@@ -40,14 +44,16 @@ export interface AdminUpdateUserRequest extends UserRequest {
   email?: string;
   nic?:string;
   phoneNumber?:string;
+  line1:string;
+  line2:string;
+  district: string;
+  province: string;
+  zipCode: string;
   role?: Array<ObjectId | string>;
   isActive?: boolean;
   vehicle?:Array<{number:string,isDefault:boolean}>;
   approvalStatus?: boolean;
-  address?: Address;
   profileImage?: string;
-  bankDetails?: Array<CardDetail>;
   accountDetails?: Array<AccountDetail>;
   isDeleted?: boolean;
-  cardDetails?: Array<CardDetail>;
 }

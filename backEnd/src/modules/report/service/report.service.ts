@@ -1116,13 +1116,11 @@ export const generateParkingOwnerDetailedReport = async (
       email: owner.email,
       phoneNumber: owner.phoneNumber || '',
       nic: owner.nic || '',
-      address: {
-        line1: owner.address?.line1 || '',
-        line2: owner.address?.line2,
-        city: owner.address?.city || '',
-        district: owner.address?.district || '',
-        province: owner.address?.province || ''
-      },
+      line1: owner.line1 || '',
+      line2: owner.line2,
+      city: owner.city || '',
+      district: owner.district || '',
+      province: owner.province || '',
       profileImage: owner.profileImage,
       isActive: owner.isActive || false,
       approvalStatus: owner.approvalStatus || false
@@ -1377,11 +1375,11 @@ export const generateParkingOwnerDetailedCSV = async (
     'Email': report.data.profile.email,
     'Phone Number': report.data.profile.phoneNumber,
     'NIC': report.data.profile.nic,
-    'Address Line 1': report.data.profile.address.line1,
-    'Address Line 2': report.data.profile.address.line2 || '',
-    'City': report.data.profile.address.city,
-    'District': report.data.profile.address.district,
-    'Province': report.data.profile.address.province,
+    'Address Line 1': report.data.profile.line1,
+    'Address Line 2': report.data.profile.line2 || '',
+    'City': report.data.profile.city,
+    'District': report.data.profile.district,
+    'Province': report.data.profile.province,
     'Is Active': report.data.profile.isActive ? 'Yes' : 'No',
     'Approval Status': report.data.profile.approvalStatus ? 'Approved' : 'Pending'
   }];

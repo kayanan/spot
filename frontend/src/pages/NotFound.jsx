@@ -8,7 +8,7 @@ const NotFound = () => {
   const navigate = useNavigate();
   
   const handleHomeClick = () => {
-    navigate('/province'); // Redirect to '/user' page
+    navigate('/dashboard'); // Redirect to '/user' page
   };
 
   

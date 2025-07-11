@@ -7,6 +7,7 @@ import BankTransferPopup from "../../../../utils/BankTransferPopup";
 import dayjs from "dayjs";
 import handlePayment from "../../../../utils/payherePaymentOption";
 import PaymentOptionPopup from "../../../../utils/PaymentOptionPopup";
+import { useAuth } from "../../../../context/AuthContext";
 
 const getSlotTypeCount = (slots) => {
   const countByType = {};
@@ -29,20 +30,27 @@ const calculateAmount = (parkingArea, subscriptionFee) => {
   return amount;
 }
 
-const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
+const ParkingAreaList = ({ parkingOwner }) => {
   const [isBankTransferOpen, setIsBankTransferOpen] = useState(false);
   const [parkingAreas, setParkingAreas] = useState([]);
   const [selectedParkingArea, setSelectedParkingArea] = useState(null);
   const [activeSubscriptionFee, setActiveSubscriptionFee] = useState(0);
   const [amount, setAmount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isPaymentOptionPopupOpen, setIsPaymentOptionPopupOpen] = useState(false);
   const paymentOptions = [
+
     { id: 'card', name: 'Card Payment', icon: FaCreditCard, color: 'text-blue-600' },
     { id: 'bank_transfer', name: 'Bank Transfer', icon: FaUniversity, color: 'text-purple-600' },
   ]
 
+  const { authState } = useAuth();
   const handleBankTransferSubmit = async (formData) => {
-
+    
+try{
+  setLoading(true);
+  setError(null); // Clear any previous errors
     const formDataToSend = new FormData();
     for (const key in formData) {
       if (key === "images") {
@@ -56,10 +64,16 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
     const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/subscription-payment`, formDataToSend, { withCredentials: true });
     if (response.status === 201) {
       toast.success("Bank transfer successful");
+      fetchParkingAreas(); // Refresh the data
     } else {
       toast.error("Bank transfer failed");
     }
-
+  } catch (err) {
+    console.error("Error submitting bank transfer:", err.message);
+    toast.error("Failed to submit bank transfer. Please try again.");
+  } finally {
+    setLoading(false);
+  }
     // Handle the form submission
     // formData will contain:
     // {
@@ -76,9 +90,12 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
 
 
   const fetchParkingAreas = async () => {
+    
     try {
+      setLoading(true);
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_ADMIN_URL}/v1/parking-area/owner/${parkingOwner?._id}`, { withCredentials: true });
       setParkingAreas(response.data.data);
+      setLoading(false);
     } catch (err) {
       console.error("Error fetching parking areas:", err.message);
       setError("Failed to load parking areas. Please try again.");
@@ -90,10 +107,11 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
         pauseOnHover: true,
         draggable: true,
       });
+      setLoading(false);
     }
   };
-  console.log(parkingAreas, "parkingAreas")
   const fetchActiveSubscriptionFee = async () => {
+    
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/parking-subscription-fee/active`);
       setActiveSubscriptionFee(response?.data || []);
@@ -107,9 +125,12 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
   }, []);
 
   const handleStatusChange = async (id, status) => {
+    
     const approve = window.confirm(`Are you sure you want to ${status ? "activate" : "deactivate"} this parking area?`);
     if (!approve) return;
     try {
+      setLoading(true);
+      setError(null); // Clear any previous errors
       const response = await axios.patch(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/parking-area/${id}`, { isActive: status });
       if (response.status === 200) {
         toast.success("Parking area status updated successfully", {
@@ -122,10 +143,11 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
     } catch (error) {
       console.log(error);
       toast.error("Failed to update parking area status");
+    } finally {
+      setLoading(false);
     }
   }
   const handlePaymentOptionSubmit = async (paymentOption) => {
-    console.log(paymentOption);
     if (paymentOption.paymentMethod === 'card') {
       setIsPaymentOptionPopupOpen(false);
       const paymentDetails = {
@@ -158,7 +180,88 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
     }
   }
 
-  return (
+  return loading ? (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {[1, 2, 3, 4, 5, 6].map((item) => (
+        <div key={item} className="bg-white shadow-md rounded-xl overflow-hidden flex flex-col animate-pulse">
+          {/* Header Section Skeleton */}
+          <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 p-4">
+            <div className="flex justify-between items-center">
+              <div className="h-6 bg-white bg-opacity-20 rounded w-32"></div>
+              <div className="flex gap-2">
+                <div className="h-5 bg-white bg-opacity-20 rounded-full w-20"></div>
+                <div className="h-5 bg-white bg-opacity-20 rounded-full w-16"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Section Skeleton */}
+          <div className="p-4 flex-1 flex flex-col">
+            {/* Description Skeleton */}
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-48"></div>
+              </div>
+            </div>
+
+            {/* Parking Slots Section Skeleton */}
+            <div className="bg-gray-50 rounded-lg p-3 mt-4 flex-1">
+              <div className="flex items-center mb-2">
+                <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
+                <div className="h-5 bg-gray-200 rounded w-24"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="w-full flex justify-between items-center bg-white p-2 rounded-md">
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  <div className="h-4 bg-gray-200 rounded w-8"></div>
+                </div>
+                <div className="w-full flex justify-between items-center bg-white p-2 rounded-md">
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 bg-gray-200 rounded mr-5"></div>
+                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-8"></div>
+                </div>
+                <div className="w-full flex justify-between items-center bg-white p-2 rounded-md">
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 bg-gray-200 rounded mr-5"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-8"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons Skeleton */}
+            <div className="flex flex-row gap-2 pt-4 mt-auto">
+              <div className="flex-1 h-10 bg-gray-200 rounded-lg"></div>
+              <div className="flex-1 h-10 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : error ? (
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-8 text-center">
+        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Parking Areas</h2>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <button
+          onClick={() => {
+            setError(null);
+            fetchParkingAreas();
+          }}
+          className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 active:scale-95"
+        >
+          Try Again
+        </button>
+      </div>
+    </div>
+  ) : (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
       {parkingAreas.map((area) => {
         const slotTypeCount = getSlotTypeCount(area?.slots?.data || []);
@@ -226,7 +329,7 @@ const ParkingAreaList = ({ parkingOwner, userType="admin" }) => {
               <div className="flex flex-row gap-2 pt-4 mt-auto">
                 <Link
                   to={`/parking-area/view/${area?._id}`}
-                  state={{ slots: area?.slots, parkingOwnerId: parkingOwner?._id ,userType:userType}}
+                  state={{ slots: area?.slots, parkingOwnerId: parkingOwner?._id, }}
                   className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white text-center py-2 rounded-lg transition duration-300 font-medium"
                 >
                   View Details

@@ -176,7 +176,7 @@ describe('Parking Slot Service', () => {
       const filteredSlots = [{ _id: 'slot1' }, { _id: 'slot2' }];
       mockRepo.filterParkingSlots.mockResolvedValue(filteredSlots as any);
       const result = await filterParkingSlots(slotFilterData, parkingAreas);
-      expect(mockRepo.filterParkingSlots).toHaveBeenCalledWith(slotFilterData, ['area1', 'area2']);
+      expect(mockRepo.filterParkingSlots).toHaveBeenCalledWith(slotFilterData, ['area1', 'area2'], 10);
       expect(result).toEqual(filteredSlots);
     });
   });

@@ -7,7 +7,7 @@ import {
   DistrictListResponse,
   DistrictResponse,
 } from '../controller/response/district.response';
-import { isValidObjectId } from 'mongoose';
+import mongoose, { isValidObjectId } from 'mongoose';
 import { CreateUpdateDistrictRequest, DistrictListRequest } from '../controller/request/create.district.request';
 import {
   BaseResponse,
@@ -105,4 +105,30 @@ export const softDeleteDistrict = async (
   if (!isValidObjectId(id)) throw new Error('Invalid district id');
   await BaseRepository.softDeleteById(DistrictDTO, id);
   return { status: true };
+};
+
+// Service for get Districts by Province Id
+export const getDistrictsByProvinceIdService = async (
+  provinceId: string
+): Promise<DistrictListResponse> => {
+  if (!isValidObjectId(provinceId)) {
+    throw new Error('Invalid province Id');
+  }
+  
+  const query = { 
+    isDeleted: {$ne:true},
+    provinceId: new mongoose.Types.ObjectId(provinceId) 
+  };
+  
+  const districts = await BaseRepository.findAll(
+    DistrictDTO, 
+    query, 
+    0, 
+    10000
+  );
+  return { 
+    status: true, 
+    districts: districts.items,
+    totalCount: districts.totalCount 
+  };
 };

@@ -9,7 +9,12 @@ export interface UserModel extends BaseDTO {
   email: string;
   password: string;
   role: Array<ObjectId>;
-  address?: Address;
+  line1: string;
+  line2: string;
+  city: string;
+  district: string;
+  province: string;
+  zipCode: string;
   phoneNumber?: string;
   otp?: string;
   otpExpiresAt?: Date;
@@ -17,26 +22,11 @@ export interface UserModel extends BaseDTO {
   isActive?: boolean;
   approvalStatus?: boolean;
   vehicle: Array<{ vehicleNumber: String, isDefault: boolean }>;
-  cardDetails?: Array<CardDetail>;
   accountDetails?: Array<AccountDetail>;
   isDeleted: boolean;
 }
-export interface Address {
-  line1: string;
-  line2: string;
-  city: string;
-  district: string;
-  province: string;
-  zipCode: string;
-}
 
-export interface CardDetail {
-  nameOnCard: string;
-  cardNumber: string;
-  expiryDate: string;
-  cvv: string;
-  isDefault: boolean;
-}
+
 
 export interface AccountDetail {
   accountHolderName: string;
@@ -45,13 +35,7 @@ export interface AccountDetail {
   branchName: string;
   isDefault: boolean;
 }
-const AddressSchema = new Schema<Address>({
-  line1: { type: String, required: true },
-  line2: { type: String },
-  city: { type: String, required: true },
-  district: { type: String, required: true },
-  province: { type: String, required: true },
-});
+
 
 const UserSchema = new Schema<UserModel>(
   {
@@ -87,9 +71,12 @@ const UserSchema = new Schema<UserModel>(
         /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
     },
     password: { type: String },
-    address: {
-      type: AddressSchema,
-    },
+    line1: { type: String, required: true },
+    line2: { type: String },
+    city: { type: String, required: true },
+    district: { type: String, required: true },
+    province: { type: String, required: true },
+    zipCode: { type: String, required: false },
     phoneNumber:
     {
       type: String,
@@ -111,15 +98,7 @@ const UserSchema = new Schema<UserModel>(
         isDefault: { type: Boolean, required: true, default: false },
       },
     ],
-    cardDetails: [
-      {
-        nameOnCard: { type: String, required: true, match: [/^[a-zA-Z\s]+$/, "Please enter a valid name."] },
-        cardNumber: { type: String, required: true, match: [/^[0-9]{16}$/, "Please enter a valid card number."] },
-        expiryDate: { type: String, required: true, match: [/^[0-1][0-9]\/[0-9]{2}$/, "Please enter a valid expiry date."] },
-        cvv: { type: String, required: true, match: [/^[0-9]{3}$/, "Please enter a valid CVV."] },
-        isDefault: { type: Boolean, required: true, default: false },
-      },
-    ],
+    
     accountDetails: [
       {
         accountHolderName: { type: String, required: true },

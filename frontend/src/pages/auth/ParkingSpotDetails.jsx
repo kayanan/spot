@@ -6,6 +6,7 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MapComponent from "../../utils/MapComponent";
+import { useAuth } from "../../context/AuthContext";
 const ParkingSpotDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,6 +21,7 @@ const ParkingSpotDetails = () => {
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [position, setPosition] = useState(null);
   const [error, setErrors] = useState(false);
+  const { authState } = useAuth();
 
   const {
     register,
@@ -230,8 +232,9 @@ const ParkingSpotDetails = () => {
       toast.success("Registration completed successfully", {
         onClose: () => {
           if (ownerId) {
-            navigate(`/owner/view/${ownerId}`);
-          } else {
+            navigate(authState.privilege === "ADMIN" ? `/owner/view/${ownerId}` : `/parking-area-home`);
+          }
+          else {
             navigate("/");
           }
         },
@@ -528,7 +531,7 @@ const ParkingSpotDetails = () => {
               
               {ownerId && <button
                 type="button"
-                onClick={() => navigate(`/owner/view/${ownerId}`)}
+                onClick={() => navigate(authState.privilege === "ADMIN" ? `/owner/view/${ownerId}` : `/parking-area-home`)}
                 className="w-full p-3 bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-all duration-200 mx-2"
               >
                 Cancel

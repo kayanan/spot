@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaCheckCircle, FaTimesCircle, FaFilter, FaDownload, FaSearch } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaFilter, FaDownload, FaSearch, FaArrowLeft } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const SubscriptionDetails = () => {
   const { id } = useParams();
-  const userType = useLocation().state.userType;
+  const parkingOwnerId = useLocation().state.parkingOwnerId;
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,7 +45,6 @@ const SubscriptionDetails = () => {
 //     return matchesFilter && matchesSearch;
 //   });
 const filteredPayments = payments;
-console.log(filteredPayments,"--------------------------------filteredPayments--------------------------------");
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -88,6 +88,10 @@ console.log(filteredPayments,"--------------------------------filteredPayments--
     <div className="container mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
+          <Link to={`/parking-area/view/${id}`} state={{parkingOwnerId: parkingOwnerId}} className="inline-flex items-center text-gray-600 hover:text-cyan-600 mb-6">
+            <FaArrowLeft className="mr-2" />
+            Back to Parking Areas
+          </Link>
           <h1 className="text-2xl font-bold text-gray-800">Subscription Details</h1>
           <div className="flex items-center gap-4">
             <div className="relative">

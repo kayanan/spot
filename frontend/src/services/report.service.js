@@ -1,9 +1,8 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000/api/admin/v1/reports';
 
 export const fetchRevenueByRegion = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'REVENUE_BY_REGION',
     startDate,
     endDate
@@ -12,7 +11,7 @@ export const fetchRevenueByRegion = async (startDate, endDate) => {
 };
 
 export const fetchReservationsRevenueByCity = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'RESERVATIONS_REVENUE_BY_CITY',
     startDate,
     endDate
@@ -21,7 +20,7 @@ export const fetchReservationsRevenueByCity = async (startDate, endDate) => {
 };
 
 export const fetchRevenueByParkingOwners = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'REVENUE_BY_PARKING_OWNERS',
     startDate,
     endDate
@@ -30,7 +29,7 @@ export const fetchRevenueByParkingOwners = async (startDate, endDate) => {
 };
 
 export const fetchSubscriptionPayments = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'SUBSCRIPTION_PAYMENTS_REPORT',
     startDate,
     endDate
@@ -40,7 +39,7 @@ export const fetchSubscriptionPayments = async (startDate, endDate) => {
 
 // CSV Export functions
 export const exportRevenueByRegionCSV = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'REVENUE_BY_REGION',
     startDate,
     endDate,
@@ -52,7 +51,7 @@ export const exportRevenueByRegionCSV = async (startDate, endDate) => {
 };
 
 export const exportReservationsRevenueByCityCSV = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'RESERVATIONS_REVENUE_BY_CITY',
     startDate,
     endDate,
@@ -64,7 +63,7 @@ export const exportReservationsRevenueByCityCSV = async (startDate, endDate) => 
 };
 
 export const exportRevenueByParkingOwnersCSV = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'REVENUE_BY_PARKING_OWNERS',
     startDate,
     endDate,
@@ -76,7 +75,7 @@ export const exportRevenueByParkingOwnersCSV = async (startDate, endDate) => {
 };
 
 export const exportSubscriptionPaymentsCSV = async (startDate, endDate) => {
-  const response = await axios.post(`${BASE_URL}/generate`, {
+  const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
     reportType: 'SUBSCRIPTION_PAYMENTS_REPORT',
     startDate,
     endDate,
@@ -89,7 +88,7 @@ export const exportSubscriptionPaymentsCSV = async (startDate, endDate) => {
 
 export const generateParkingOwnerDetailedReport = async (startDate, endDate, ownerId) => {
   try {
-    const response = await axios.post(`${BASE_URL}/generate`, {
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
       reportType: 'PARKING_OWNER_DETAILED_REPORT',
       startDate,
       endDate,
@@ -105,7 +104,7 @@ export const generateParkingOwnerDetailedReport = async (startDate, endDate, own
 
 export const exportParkingOwnerDetailedReportCSV = async (startDate, endDate, ownerId) => {
   try {
-    const response = await axios.post(`${BASE_URL}/generate`, {
+    const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_REPORT_BASE_URL}/generate`, {
       reportType: 'PARKING_OWNER_DETAILED_REPORT',
       startDate,
       endDate,

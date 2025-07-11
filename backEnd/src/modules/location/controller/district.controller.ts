@@ -5,6 +5,7 @@ import {
   createDistrict,
   updateDistrict,
   softDeleteDistrict,
+  getDistrictsByProvinceIdService,
 } from '../service/district.service';
 import { ListRequest } from '../../base/controller/request/list.request';
 import {
@@ -88,5 +89,18 @@ export const deleteOneDistrict = async (
      res.status(200).json(result);
   } catch (error:any) {
      res.status(400).json({ status: false, message: error.message });
+  }
+};
+
+export const getDistrictsByProvinceId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { provinceId } = req.params;
+    const result: DistrictListResponse = await getDistrictsByProvinceIdService(provinceId);
+    res.status(200).json(result);
+  } catch (error:any) {
+    res.status(400).json({ status: false, message: error.message });
   }
 };

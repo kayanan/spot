@@ -80,12 +80,26 @@ import ReservationHistory from "./pages/CustomerUi/ReservationHistory";
 import ActiveReservation from "./pages/CustomerUi/ActiveReservation";
 import UpcommingReservation from "./pages/CustomerUi/UpcommingReservation";
 // customer import end
+// parking slot import start
+import ParkingSlot from "./pages/ParkingSlot/ParkingSlot";
+// parking slot import end
 
-const ProtectedRoute = ({ children }) => {
+// login as import start
+import LoginAs from "./pages/auth/LoginAs";
+// login as import end
+
+const ProtectedRoute = ({ children, privilege }) => {
   const { authState } = useAuth();
-  if (!authState.isAuthenticated) {
+  if(privilege?.length > 0 && !privilege.includes(authState.privilege) && authState.isAuthenticated && authState.privilege !== "CUSTOMER"){
+    return <Navigate to="/dashboard" replace />;
+  }
+  else if(privilege?.length > 0 && authState.privilege === "CUSTOMER" && authState.isAuthenticated && !privilege.includes(authState.privilege)){
+    return <Navigate to="/customer-landing-page" replace />;
+  }
+  else if(!authState.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+  
   return children;
 };
 
@@ -98,19 +112,19 @@ const AppRoutes = () => {
   
 
 
-  const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/parking-owner/spot-details" || window.location.pathname === "/customer/register";
+  const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/parking-owner/spot-details" || window.location.pathname === "/customer/register" || window.location.pathname === "/login-as"; 
   //for testing purpose
   // const isLoginPage = false;
   // authState.isAuthenticated = true;
 //--------------------------------
   return (
     <div className="flex">
-      {!isLoginPage && authState.isAuthenticated && (
+      {!isLoginPage && authState.isAuthenticated && authState.privilege !== "CUSTOMER" && (
         <Sidebar isOpen={isSidebarOpen} />
       )}
       <div
         className={`flex-1 transition-all duration-300 ${
-          !isLoginPage ? (isSidebarOpen ? "ml-0 xl:ml-64" : "ml-20") : ""
+          (!isLoginPage && authState.privilege !== "CUSTOMER") ? (isSidebarOpen ? "ml-0 xl:ml-64" : "ml-20") : ""
         }`}
       >
       {/* <divclassName={`flex-1 transition-all duration-300 ${!isLoginPage ? (isSidebarOpen ? "ml-0 xl:ml-64" : "ml-20") : "" }`}> */}
@@ -122,30 +136,33 @@ const AppRoutes = () => {
         )}
  <div className={`${isLoginPage ? "pt-0" : "pt-20"}`}>
           <Routes>
+
+            <Route path="/login-as" element={<LoginAs  />} />
             <Route path="/login" element={<Login />} />
             <Route path="/customer/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
             {/* ------------Location Route Start-------- */}
             {/* admin dashboard route start */}
-           {authState.user?.roles?.includes("ADMIN") && ( <Route path="/dashboard" element={<AdminDashboard />} />)}
-           {authState.user?.roles?.includes("CUSTOMER") && ( <Route path="/dashboard" element={<CustomerDashboard />} />)}
-           {authState.user?.roles?.includes("PARKING_OWNER") && ( <Route path="/dashboard" element={<ManagerDashboard />} />)}
+           {authState.privilege === "ADMIN" && ( <Route path="/dashboard" element={<AdminDashboard />} />)}
+           {authState.privilege === "CUSTOMER" && ( <Route path="/dashboard" element={<CustomerLandingPage />} />)}
+           {authState.privilege === "PARKING_OWNER" && ( <Route path="/dashboard" element={<ManagerDashboard />} />)}
+           {authState.privilege === "PARKING_MANAGER" && ( <Route path="/dashboard" element={<ManagerDashboard />} />)}
             {/* admin dashboard route end */}
             {/* province route start */}
-            <Route path="/province" element={<ProvinceList />} />
-            <Route path="/province/add" element={<AddProvince />} />
-            <Route path="/province/update/:id" element={<UpdateProvince />} />
-            <Route path="/province/view/:id" element={<ViewProvince />} />
+            <Route path="/province" element={<ProtectedRoute privilege={["ADMIN"]}><ProvinceList /></ProtectedRoute>} />
+            <Route path="/province/add" element={<ProtectedRoute privilege={["ADMIN"]}><AddProvince /></ProtectedRoute>} />
+            <Route path="/province/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateProvince /></ProtectedRoute>} />
+            <Route path="/province/view/:id" element={<ProtectedRoute privilege={["ADMIN"]}><ViewProvince /></ProtectedRoute>} />
             {/* province route end */}
             {/* District route start */}
-            <Route path="/district/add" element={<AddDistrict />} />
-            <Route path="/district/update/:id" element={<UpdateDistrict />} />
-            <Route path="/district/view/:id" element={<ViewDistrict />} />
+            <Route path="/district/add" element={<ProtectedRoute privilege={["ADMIN"]}><AddDistrict /></ProtectedRoute>} />
+            <Route path="/district/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateDistrict /></ProtectedRoute>} />
+            <Route path="/district/view/:id" element={<ProtectedRoute privilege={["ADMIN"]}><ViewDistrict /></ProtectedRoute>} />
             {/* District route end */}
             {/* City route start */}
-            <Route path="/city/add" element={<AddCity />} />
-            <Route path="/city/update/:id" element={<UpdateCity />} />
-            <Route path="/city/view/:id" element={<ViewCity />} />
+            <Route path="/city/add" element={<ProtectedRoute privilege={["ADMIN"]}><AddCity /></ProtectedRoute>} />
+            <Route path="/city/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateCity /></ProtectedRoute>} />
+            <Route path="/city/view/:id" element={<ProtectedRoute privilege={["ADMIN"]}><ViewCity /></ProtectedRoute>} />
             {/* City route end */}
             {/* ------------Location Route End-------- */}
 
@@ -158,57 +175,61 @@ const AppRoutes = () => {
             {/* user route end */}
 
             {/* role route start */}
-            <Route path="/role" element={<RoleList />} />
-            <Route path="/role/add" element={<AddRole />} />
-            <Route path="/role/update/:id" element={<UpdateRole />} />
-            <Route path="/role/view/:id" element={<ViewRole />} />
+            <Route path="/role" element={<ProtectedRoute privilege={["ADMIN"]}><RoleList /></ProtectedRoute>} />
+            <Route path="/role/add" element={<ProtectedRoute privilege={["ADMIN"]}><AddRole /></ProtectedRoute>} />
+            <Route path="/role/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateRole /></ProtectedRoute>} />
+            <Route path="/role/view/:id" element={<ProtectedRoute privilege={["ADMIN"]}><ViewRole /></ProtectedRoute>} />
             {/* role route end */}
 
             {/* customer route start */}
             {/* <Route path="/user" element={<Navigate to="/user" replace />} /> */}
-            <Route path="/customer" element={<CustomerList />} />
-            <Route path="/customer/view/:id" element={<ViewCustomer />} />
-            <Route path="/customer/update/:id" element={<UpdateCustomer />} />
+            <Route path="/customer" element={<ProtectedRoute privilege={["ADMIN"]}><CustomerList /></ProtectedRoute>} />
+            <Route path="/customer/view/:id" element={<ProtectedRoute privilege={["ADMIN"]}><ViewCustomer /></ProtectedRoute>} />
+            <Route path="/customer/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateCustomer /></ProtectedRoute>} />
             {/* customer route end */}
 
             {/* parking owner route start */}
-            <Route path="/owner" element={<ParkingOwnerList />} />
-            <Route path="/owner/view/:id" element={<ViewParkingOwner />} />
-            <Route path="/owner/update/:id" element={<UpdateParkingOwner />} />
-            <Route path="/parking-owner/spot-details" element={<ParkingSpotDetails />} />
-            <Route path="/owner/pending-request" element={<PendingRequest />} />
+            <Route path="/owner" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ParkingOwnerList /></ProtectedRoute>} />
+            <Route path="/owner/view/:id" element={<ProtectedRoute><ViewParkingOwner /></ProtectedRoute>} />
+            <Route path="/owner/update/:id" element={<ProtectedRoute><UpdateParkingOwner /></ProtectedRoute>} />
+            <Route path="/parking-owner/spot-details" element={<ProtectedRoute><ParkingSpotDetails /></ProtectedRoute>} />
+            <Route path="/owner/pending-request" element={<ProtectedRoute><PendingRequest /></ProtectedRoute>} />
             {/* parking owner route end */}
 
             {/* parking area route start */}
-            <Route path="/parking-area" element={<ParkingAreaList />} />
-            <Route path="/parking-area/view/:id" element={<ViewParkingArea />} />
-            <Route path="/parking-area/subscription-details/:id" element={<SubscriptionDetails />} />
+            <Route path="/parking-area" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ParkingAreaList /></ProtectedRoute>} />
+            <Route path="/parking-area/view/:id" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ViewParkingArea /></ProtectedRoute>} />
+            <Route path="/parking-area/subscription-details/:id" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><SubscriptionDetails /></ProtectedRoute>} />
             {/* parking area route end */}
 
             {/* parking subscription fee route start */}
-            <Route path="/parking-subscription-fee" element={<ListSubscriptionFees key={location.state?.key}/>} />
-            <Route path="/parking-subscription-fee/add" element={<AddSubscriptionFee />} />
-            <Route path="/parking-subscription-fee/update/:id" element={<UpdateSubscriptionFee />} />
+            <Route path="/parking-subscription-fee" element={<ProtectedRoute privilege={["ADMIN"]}><ListSubscriptionFees key={location.state?.key} /></ProtectedRoute>} />
+            <Route path="/parking-subscription-fee/add" element={<ProtectedRoute privilege={["ADMIN"]}><AddSubscriptionFee /></ProtectedRoute>} />
+            <Route path="/parking-subscription-fee/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateSubscriptionFee /></ProtectedRoute>} />
             {/* parking subscription fee route end */}
             {/* reports route start */}
-            <Route path="/reports/parking-payments" element={<ListParkingPayments />} />
-            <Route path="/reports/admin" element={<AdminReport />} />
-            <Route path="/reports/parking-owner" element={<ParkingOwnerReport />} />
+            <Route path="/reports/parking-payments" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ListParkingPayments /></ProtectedRoute>} />
+            <Route path="/reports/admin" element={<ProtectedRoute privilege={["ADMIN"]}><AdminReport /></ProtectedRoute>} />
+            <Route path="/reports/parking-owner" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ParkingOwnerReport /></ProtectedRoute>} />
             {/* <Route path="/reports/parking-reservations" element={<ListParkingReservations />} />
             <Route path="/reports/parking-slots" element={<ListParkingSlots />} /> */}
             {/* reports route end */}
             {/* parking area home page route start */}
-            <Route path="/parking-area-home" element={<ParkingAreaHomePage />} />
+            <Route path="/parking-area-home" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ParkingAreaHomePage /></ProtectedRoute>} />
             {/* parking area home page route end */}
 
 
             {/* customer route start */}
-            <Route path="/customer-landing-page" element={<CustomerLandingPage />} />
-            <Route path="/reservation/find-parking-spot" element={<FindParkingSpot />} />
-            <Route path="/reservation/history" element={<ReservationHistory />} />
-            <Route path="/reservation/active" element={<ActiveReservation />} />
-            <Route path="/reservation/upcoming" element={<UpcommingReservation />} />
+            <Route path="/customer-landing-page" element={<ProtectedRoute privilege={["ADMIN", "CUSTOMER"]}><CustomerLandingPage /></ProtectedRoute>} />
+            <Route path="/reservation/find-parking-spot" element={<ProtectedRoute privilege={["ADMIN", "CUSTOMER"]}><FindParkingSpot /></ProtectedRoute>} />
+            <Route path="/reservation/history" element={<ProtectedRoute privilege={["ADMIN", "CUSTOMER"]}><ReservationHistory /></ProtectedRoute>} />
+            <Route path="/reservation/active" element={<ProtectedRoute privilege={["ADMIN", "CUSTOMER"]}><ActiveReservation /></ProtectedRoute>} />
+            <Route path="/reservation/upcoming" element={<ProtectedRoute privilege={["ADMIN", "CUSTOMER"]}><UpcommingReservation /></ProtectedRoute>} />
             {/* customer route end */}
+
+            {/* parking slot route start */}
+            <Route path="/parking-slot" element={<ProtectedRoute privilege={["ADMIN", "PARKING_MANAGER", "PARKING_OWNER"]}><ParkingSlot /></ProtectedRoute>} />
+            {/* parking slot route end */}
 
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<NotFound />} />

@@ -2,10 +2,16 @@ import * as repo from '../../data/repositories/reservationPayment.repository';
 import * as validator from '../../validators/reservationPayment.validator';
 import * as reservationPaymentService from '../reservationPayment.service';
 import { PaymentStatus, PaymentMethod } from '../../data/dtos/reservationPayment.dto';
+import { jest, describe, beforeEach, it, expect } from '@jest/globals';
 
 // Mock dependencies
 jest.mock('../../data/repositories/reservationPayment.repository');
 jest.mock('../../validators/reservationPayment.validator');
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.spyOn(require('../../data/repositories/reservation.repository'), 'updateReservation').mockResolvedValue({});
+});
 
 const mockRepo = repo as jest.Mocked<typeof repo>;
 const mockValidator = validator.ReservationPaymentValidator as jest.Mocked<typeof validator.ReservationPaymentValidator>;
@@ -25,13 +31,15 @@ describe('Reservation Payment Service', () => {
       referenceNumber: 'REF123',
       bankName: 'Test Bank',
       branch: 'Test Branch',
-      cardNumber: '1234567890123456',
-      transactionDate: new Date(),
+      cardPaymentDetails: {
+        cardNumber: '1234567890123456',
+        cardHolderName: 'John Doe',
+        cardExpiryMonth: '12',
+        cardExpiryYear: '25',
+      },
       images: ['image1.jpg', 'image2.jpg'],
       paidBy: '507f1f77bcf86cd799439012',
-      customer: '507f1f77bcf86cd799439013',
-      parkingArea: '507f1f77bcf86cd799439014',
-      parkingSlot: '507f1f77bcf86cd799439015'
+      customer: '507f1f77bcf86cd799439013'
     };
 
     it('should create reservation payment successfully', async () => {
@@ -39,13 +47,13 @@ describe('Reservation Payment Service', () => {
         success: true,
         data: mockPaymentData
       } as any);
-      mockRepo.createReservationPayment.mockResolvedValue({ _id: 'payment1', ...mockPaymentData } as any);
+      mockRepo.createReservationPayment.mockResolvedValue({ _id: '507f1f77bcf86cd799439011', ...mockPaymentData } as any);
 
       const result = await reservationPaymentService.createReservationPaymentService(mockPaymentData as any);
 
       expect(mockValidator.createReservationPaymentValidator).toHaveBeenCalledWith(mockPaymentData);
-      expect(mockRepo.createReservationPayment).toHaveBeenCalledWith(mockPaymentData);
-      expect(result).toEqual({ _id: 'payment1', ...mockPaymentData });
+      expect(mockRepo.createReservationPayment).toHaveBeenCalledWith(expect.objectContaining(mockPaymentData));
+      expect(result).toEqual({ _id: '507f1f77bcf86cd799439011', ...mockPaymentData });
     });
 
     it('should throw error when validation fails', async () => {

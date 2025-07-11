@@ -5,13 +5,11 @@ export interface ParkingOwnerProfile {
   email: string;
   phoneNumber: string;
   nic: string;
-  address: {
     line1: string;
     line2?: string;
     city: string;
     district: string;
     province: string;
-  };
   profileImage?: string;
   isActive: boolean;
   approvalStatus: boolean;

@@ -4,13 +4,13 @@ import axios from "axios";
 import { FaArrowLeft, FaMapMarkerAlt, FaPhone, FaUser, FaParking, FaCar, FaCheck, FaClock, FaUsers, FaBuilding, FaInfoCircle, FaTimes ,FaCreditCard} from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import ListParkingSlots from "../ParkingSlots/ListParkingSlots";
+import { useAuth } from "../../../../context/AuthContext";
 
 const ViewParkingArea = () => {
     const { id } = useParams();
     const parkingOwnerId = useLocation().state.parkingOwnerId;
-    const userType = useLocation().state.userType;
     const [slots, setSlots] = useState(useLocation().state?.slot || []);
-
+    const { authState } = useAuth();
     const [parkingArea, setParkingArea] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -81,7 +81,7 @@ const ViewParkingArea = () => {
     return (
         <div className="container mx-auto p-6">
             {/* Back Button */}
-            <Link to={userType === "admin" ? `/admin/view/${parkingOwnerId}` : userType === "staff" ? `/staff/view/${parkingOwnerId}` : `/parking-area-home`} className="inline-flex items-center text-gray-600 hover:text-cyan-600 mb-6">
+            <Link to={authState.privilege === "ADMIN" ? `/owner/view/${parkingOwnerId}` : authState.privilege === "PARKING_OWNER" ? `/parking-area-home` : `/dashboard`} className="inline-flex items-center text-gray-600 hover:text-cyan-600 mb-6">
                 <FaArrowLeft className="mr-2" />
                 Back to Parking Areas
             </Link>
@@ -162,7 +162,7 @@ const ViewParkingArea = () => {
                                     <span className="font-semibold text-black-600">{parkingArea?.parkingSubscriptionPaymentId?.amount.toLocaleString('en-US', { style: 'currency', currency: 'LKR' }) || "N/A"}</span>
                                 </div>
                                 <button className="bg-cyan-500 text-white px-4 py-1 rounded-md w-full mt-2 hover:bg-cyan-600" onClick={() => {
-                                    navigate(`/parking-area/subscription-details/${parkingArea?._id}`,{state:{userType:userType}});
+                                    navigate(`/parking-area/subscription-details/${parkingArea?._id}`,{state:{parkingOwnerId: parkingOwnerId}});
                                 }}>
                                     More Details
                                 </button>

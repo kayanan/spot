@@ -47,7 +47,7 @@ export const findReservationsByParkingSlot = async (parkingSlotId: string) => {
 
 export const findActiveReservations = async (filters: mongoose.FilterQuery<ReservationModel>,page:number,limit:number) => {
   const count= await ReservationDTO.countDocuments(filters);
-  const result= await ReservationDTO.find(filters).populate("parkingSlot parkingArea user vehicleType paymentIds").sort({updatedAt:-1,createdAt:-1}).skip((page-1)*limit).limit(limit);
+  const result= await ReservationDTO.find(filters).populate("parkingSlot parkingArea user vehicleType paymentIds").sort({createdAt:-1}).skip((page-1)*limit).limit(limit);
   return {result,count}
 };
 

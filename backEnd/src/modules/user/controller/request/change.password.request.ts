@@ -3,3 +3,8 @@ export interface ChangePasswordRequest {
   password: string;
   otp: string;
 }
+
+export interface ChangePasswordLoggedInRequest {
+  currentPassword: string;
+  newPassword: string;
+}

@@ -6,7 +6,7 @@ import {
   BaseResponse,
   CreatedUpdatedResponse,
 } from '../../base/controller/responses/base.repsonse';
-import { ChangePasswordRequest } from './request/change.password.request';
+import { ChangePasswordRequest, ChangePasswordLoggedInRequest } from './request/change.password.request';
 import { ForgotPasswordRequest } from './request/forgot.password.request';
 import {
   UserListResponse,
@@ -135,6 +135,8 @@ export const getCurrentUser = async (req: any, res: Response) => {
 };
 
 export const sendOTP = async (req: Request, res: Response) => {
+  console.log("dasdsadsdsdsd");
+  
   try {
     const response: BaseResponse = await UserService.forgotPassword(
       req.body as unknown as ForgotPasswordRequest
@@ -162,6 +164,20 @@ export const changePassword = async (req: Request, res: Response) => {
   try {
     const response: BaseResponse = await UserService.resetPassword(
       req.body as unknown as ChangePasswordRequest
+    );
+    res.status(200).json(response);
+  } catch (error: any) {
+    res.status(400).json(errorResponse(error.message));
+  }
+};
+
+export const changePasswordLoggedIn = async (req: any, res: Response) => {
+  try {
+    console.log("hiiiiiiiiiii");
+    
+    const response: BaseResponse = await UserService.changePasswordLoggedIn(
+      req.body as unknown as ChangePasswordLoggedInRequest,
+      req.userData as unknown as UserJWT
     );
     res.status(200).json(response);
   } catch (error: any) {

@@ -156,9 +156,14 @@ const Login = () => {
             >
               {isLoading ? "Signing in..." : "Sign in to Dashboard"}
             </button>
-            <Link to="/customer/register" className="ml-10 mt-1 block text-gray-600 rounded-lg p-2 hover:text-gray-800">
-              Don't have an account? <span className="text-cyan-500">Register here</span>
-            </Link>
+            <div className="space-y-2">
+              <Link to="/customer/register" className="block text-gray-600 rounded-lg p-2 hover:text-gray-800 text-center">
+                Don&apos;t have an account? <span className="text-cyan-500">Register here</span>
+              </Link>
+              <Link to="/forgot-password" className="block text-gray-600 rounded-lg p-2 hover:text-gray-800 text-center">
+                <span className="text-cyan-500">Forgot Password?</span>
+              </Link>
+            </div>
           </form>
         </div>
         <div className="mt-4 text-center text-white text-sm">

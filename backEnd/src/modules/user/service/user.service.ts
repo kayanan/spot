@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { UserDTO, UserModel } from '../data/dtos/user.dto';
 import { sendSMS } from '../../base/services/sms.service';
-//import * as EmailService from '../../base/services/email.service';
-//import { EmailTemplateType } from '@/modules/base/enums/email.template.type';
-import { ChangePasswordRequest } from '../controller/request/change.password.request';
+import * as EmailService from '../../base/services/email.service';
+import { EmailTemplateType } from '../../base/enums/email.template.type';
+import { ChangePasswordRequest, ChangePasswordLoggedInRequest } from '../controller/request/change.password.request';
 import UserValidator from '../validators/user.validator';
 import {
   BaseResponse,
@@ -33,6 +33,7 @@ import { json } from 'express';
 import HelperUtil from '../../../utils/helper.util';
 import { deleteParkingAreaByOwnerId, updateParkingAreaByOwnerId } from '../../parkingArea/service/parkingArea.service';
 import RoleService from './role.service';
+import { log } from 'console';
 
 const getUsers = async (
   listReq: UserListRequest
@@ -145,6 +146,7 @@ const login = async (req: any) => {
 const forgotPassword = async (
   forgotPasswordRequest: ForgotPasswordRequest
 ): Promise<BaseResponse> => {
+console.log("dadadsdad");
 
   if (forgotPasswordRequest.email == null)
     throw new Error('Email not found');
@@ -155,18 +157,38 @@ const forgotPassword = async (
   const otp = await UserRepository.setPasswordResetOtp(
     user._id!.toString()
   );
-  // const emailSent = await EmailService.send(
-  //   user?.email ?? '',
-  //   EmailTemplateType.forgotPassword,
-  //   {
-  //     expiresIn: process.env.OTP_EXPIRES_HOURS,
-  //     otp,
-  //     name: user.firstName,
-  //   }
-  // );
-  const message = `Your OTP is ${otp}. Use this code to reset your password. It will expire in ${process.env?.OTP_EXPIRES_MINUTE} minutes. - FindMySpot`;
-  const smsSent = await sendSMS(user?.phoneNumber?.replace(/^0/, '94')!, message);
-  if (!smsSent) throw new Error('SMS not sent');
+  console.log("dadadsdad");
+  // Send email with OTP
+  let emailSent = false;
+  try {
+    emailSent = await EmailService.send(
+      user?.email ?? '',
+      EmailTemplateType.forgotPassword,
+      {
+        expiresIn: process.env.OTP_EXPIRES_MINUTE,
+        otp,
+        name: user.firstName,
+      }
+    );
+    console.log('Email sent successfully:', emailSent);
+  } catch (emailError) {
+    console.error('Email sending failed:', emailError);
+    emailSent = false;
+  }
+  
+  // Send SMS as backup
+  let smsSent = false;
+  try {
+    const message = `Your OTP is ${otp}. Use this code to reset your password. It will expire in ${process.env?.OTP_EXPIRES_MINUTE} minutes. - FindMySpot`;
+    // const smsResult = await sendSMS(user?.phoneNumber?.replace(/^0/, '94')!, message);
+    // smsSent = smsResult.status === true;
+    console.log('SMS sent successfully:', smsSent);
+  } catch (smsError) {
+    console.error('SMS sending failed:', smsError);
+    smsSent = false;
+  }
+  
+  if (!emailSent) throw new Error('Failed to send OTP via email and SMS. Please try again later.');
 
   return {
     status: true,
@@ -202,14 +224,16 @@ const resetPassword = async (
   );
   if (!passwordChanged)
     throw new Error('Error while updating the password');
-  // const emailSent = await EmailService.send(
-  //   user.email ?? '',
-  //   EmailTemplateType.changePassword,
-  //   {
-  //     name: user.firstName,
-  //   }
-  // );
-  // if (!emailSent) throw new Error('Email not sent');
+  
+  // Send confirmation email
+  const emailSent = await EmailService.send(
+    user.email ?? '',
+    EmailTemplateType.changePassword,
+    {
+      name: user.firstName,
+    }
+  );
+  
   const resetOTP = await UserRepository.resetPasswordResetOtp(
     user._id!.toString()
   );
@@ -368,6 +392,48 @@ const deleteUser = async (id: string): Promise<BaseResponse> => {
   return { status: true, message: 'User deleted successfully' } as BaseResponse;
 };
 
+const changePasswordLoggedIn = async (
+  changePasswordRequest: ChangePasswordLoggedInRequest,
+  userJWT: UserJWT
+): Promise<BaseResponse> => {
+  try {
+    // Validate the request
+    const valResult = UserValidator.changePasswordValidator({
+      currentPassword: changePasswordRequest.currentPassword,
+      newPassword: changePasswordRequest.newPassword,
+    });
+    
+    if (valResult.error) {
+      throw new Error(valResult.error.errors[0].message);
+    }
+    // Get the current user with password included
+    const user = await UserRepository.findByEmail(userJWT.email);
+    if (!user) throw new Error('User not found');
+    console.log(user);
+    
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordRequest.currentPassword,
+      user.password
+    );
+    if (!isCurrentPasswordValid) throw new Error('Current password is incorrect');
+
+    // Update the password (pass plain password, let pre-save hook handle hashing)
+    const passwordChanged = await UserRepository.updatePassword(
+      userJWT.userId,
+      changePasswordRequest.newPassword
+    );
+    if (!passwordChanged) throw new Error('Failed to update password');
+
+    return {
+      status: true,
+      message: 'Password changed successfully',
+    } as BaseResponse;
+  } catch (error: any) {
+    throw new Error(`Failed to change password: ${error.message}`);
+  }
+};
+
 export default {
   getUsers,
   getUser,
@@ -375,6 +441,7 @@ export default {
   login,
   forgotPassword,
   resetPassword,
+  changePasswordLoggedIn,
   updateUser,
   adminUpdateUser,
   sendOTPForMobilNumberVerification,

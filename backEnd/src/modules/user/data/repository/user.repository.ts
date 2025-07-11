@@ -194,6 +194,24 @@ async function changePassword(
   }
 }
 
+async function updatePassword(
+  userId: string,
+  plainPassword: string
+): Promise<boolean> {
+  try {
+    const user = await UserDTO.findById(new mongoose.Types.ObjectId(userId));
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    user.password = plainPassword; // Plain password, pre-save hook will hash it
+    const result = await user.save();
+    return result != null;
+  } catch (e) {
+    throw e as Error;
+  }
+}
+
 async function updateUser(
   userPayload: UpdateUserRequest,
   userId: string
@@ -262,6 +280,7 @@ export default {
   findTotalUsers,
   resetPasswordResetOtp,
   changePassword,
+  updatePassword,
   updateUser,
   adminUpdateUser,
   findByRole,

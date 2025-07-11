@@ -78,6 +78,35 @@ const resetPasswordValidator = (data: any) => {
   return schema.safeParse(data);
 };
 
+const changePasswordValidator = (data: any) => {
+  const schema = z.object({
+    currentPassword: z
+      .string({
+        required_error: 'Current password is required',
+        invalid_type_error: `Current password should be a type of 'string'`,
+      })
+      .nonempty({
+        message: 'Current password cannot be an empty field ',
+      }),
+    newPassword: z
+      .string({
+        required_error: 'New password is required',
+        invalid_type_error: `New password should be a type of 'string'`,
+      })
+      .regex(
+        new RegExp('^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{8,}$'),
+        {
+          message:
+            'Password must be at least 8 characters and contain an uppercase letter, lowercase letter, and number',
+        }
+      )
+      .nonempty({
+        message: 'New password cannot be an empty field ',
+      }),
+  });
+  return schema.safeParse(data);
+};
+
 const saveUserValidator = (data: any) => {
   const schema = z.object({
     role: z.array(z.string({
@@ -488,6 +517,7 @@ const adminUpdateUserValidator = (data: any) => {
 export default {
   loginValidator,
   resetPasswordValidator,
+  changePasswordValidator,
   saveUserValidator,
   updateUserValidator,
   adminUpdateUserValidator,

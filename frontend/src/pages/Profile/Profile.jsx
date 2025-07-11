@@ -150,31 +150,31 @@ const Profile = () => {
   };
 
   const handlePasswordChange = async (e) => {
-    console.log('Password changed successfully!');
     e.preventDefault();
-    // const formData = new FormData(e.target);
-    // const currentPassword = formData.get('currentPassword');
-    // const newPassword = formData.get('newPassword');
-    // const confirmPassword = formData.get('confirmPassword');
-    toast.success('Password changed successfully!');
-    setShowPasswordForm(false);
+    const formData = new FormData(e.target);
+    const currentPassword = formData.get('currentPassword');
+    const newPassword = formData.get('newPassword');
+    const confirmPassword = formData.get('confirmPassword');
 
     if (newPassword !== confirmPassword) {
       toast.error('New passwords do not match!');
       return;
     }
    
-    // try {
-    //   await axios.patch('/api/user/change-password', {
-    //     currentPassword,
-    //     newPassword
-    //   }, { withCredentials: true });
-    //   toast.success('Password changed successfully!');
-    //   setShowPasswordForm(false);
-    //   e.target.reset();
-    // } catch (error) {
-    //   toast.error('Failed to change password. Please check your current password.');
-    // }
+    try {
+      await axios.patch(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/change-password`, {
+        currentPassword,
+        newPassword
+      }, { withCredentials: true });
+      toast.success('Password changed successfully!');
+      setShowPasswordForm(false);
+      e.target.reset();
+    } catch (error) {
+      // Extract the actual error message from the backend response
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to change password. Please check your current password.';
+      toast.error(errorMessage);
+      console.log('Password change error:', error.response?.data || error);
+    }
   };
 
   const handleAddVehicle = () => {
@@ -540,7 +540,7 @@ const Profile = () => {
               />
             </div>
             <div className="flex gap-3">
-              <button type="submit" className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition duration-150" onClick={handlePasswordChange}>
+              <button type="submit" className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition duration-150">
                 Update Password
               </button>
               <button 

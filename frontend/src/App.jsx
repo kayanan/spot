@@ -10,6 +10,7 @@ import { useState } from "react";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/auth/Login";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 import NotFound from "./pages/NotFound"; // Make sure NotFound is imported
 // profile import start
 import Profile from "./pages/Profile/Profile";
@@ -140,6 +141,8 @@ const AppRoutes = () => {
             <Route path="/login-as" element={<LoginAs  />} />
             <Route path="/login" element={<Login />} />
             <Route path="/customer/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={<Profile />} />
             {/* ------------Location Route Start-------- */}
             {/* admin dashboard route start */}

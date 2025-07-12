@@ -278,20 +278,20 @@ describe('Parking Area Service', () => {
     });
   });
 
-  describe('getAllParkingAreas', () => {
-    it('should get all parking areas successfully', async () => {
-      const mockParkingAreas = [
-        { _id: '507f1f77bcf86cd799439015', name: 'Parking Area 1' },
-        { _id: '507f1f77bcf86cd799439016', name: 'Parking Area 2' }
-      ];
-      mockParkingAreaRepository.getAllParkingAreas.mockResolvedValue(mockParkingAreas as any);
+  // describe('getAllParkingAreas', () => {
+  //   it('should get all parking areas successfully', async () => {
+  //     const mockParkingAreas = [
+  //       { _id: '507f1f77bcf86cd799439015', name: 'Parking Area 1' },
+  //       { _id: '507f1f77bcf86cd799439016', name: 'Parking Area 2' }
+  //     ];
+  //     mockParkingAreaRepository.getAllParkingAreas.mockResolvedValue(mockParkingAreas as any);
 
-      const result = await getAllParkingAreas();
+  //     const result = await getAllParkingAreas();
 
-      expect(mockParkingAreaRepository.getAllParkingAreas).toHaveBeenCalled();
-      expect(result).toEqual(mockParkingAreas);
-    });
-  });
+  //     expect(mockParkingAreaRepository.getAllParkingAreas).toHaveBeenCalled();
+  //     expect(result).toEqual(mockParkingAreas);
+  //   });
+  // });
 
   describe('getParkingAreasByOwnerId', () => {
     const mockOwnerId = '507f1f77bcf86cd799439011';

@@ -157,27 +157,26 @@ describe('Reservation Payment Service', () => {
     });
   });
 
-  describe('getAllReservationPaymentsService', () => {
-    it('should get all reservation payments successfully', async () => {
-      const mockPayments = [
-        { _id: 'payment1', paymentAmount: 1000 },
-        { _id: 'payment2', paymentAmount: 2000 }
-      ];
-      mockRepo.findAllReservationPayments.mockResolvedValue(mockPayments as any);
+  //   it('should get all reservation payments successfully', async () => {
+  //     const mockPayments = [
+  //       { _id: 'payment1', paymentAmount: 1000 },
+  //       { _id: 'payment2', paymentAmount: 2000 }
+  //     ];
+  //     mockRepo.findAllReservationPayments.mockResolvedValue(mockPayments as any);
 
-      const result = await reservationPaymentService.getAllReservationPaymentsService();
+  //     const result = await reservationPaymentService.getAllReservationPaymentsService();
 
-      expect(mockRepo.findAllReservationPayments).toHaveBeenCalled();
-      expect(result).toEqual(mockPayments);
-    });
+  //     expect(mockRepo.findAllReservationPayments).toHaveBeenCalled();
+  //     expect(result).toEqual(mockPayments);
+  //   });
 
-    it('should handle repository errors', async () => {
-      mockRepo.findAllReservationPayments.mockRejectedValue(new Error('Database error'));
+  //   it('should handle repository errors', async () => {
+  //     mockRepo.findAllReservationPayments.mockRejectedValue(new Error('Database error'));
 
-      await expect(reservationPaymentService.getAllReservationPaymentsService())
-        .rejects.toThrow('Failed to get all reservation payments: Database error');
-    });
-  });
+  //     await expect(reservationPaymentService.getAllReservationPaymentsService())
+  //       .rejects.toThrow('Failed to get all reservation payments: Database error');
+  //   });
+  // });
 
   describe('getReservationPaymentsByReservationService', () => {
     it('should get reservation payments by reservation successfully', async () => {

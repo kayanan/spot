@@ -99,7 +99,7 @@ const login = async (req: any) => {
 
   const checkUser = await UserRepository.findByEmail(req.body.email);
   if (checkUser == null) throw new Error('User not found');
-
+console.log(checkUser, "checkUser");
   const compareRes: boolean = await bcrypt.compare(
     req.body.password,
     checkUser.password
@@ -112,6 +112,7 @@ const login = async (req: any) => {
       }
     }, 0, 100,
   )
+
   if (role.items.length === 0) throw new Error('Role not found');
   console.log(checkUser);
   if (compareRes) {
@@ -129,6 +130,7 @@ const login = async (req: any) => {
         expiresIn: '6h',
       }
     );
+    console.log(checkUser.parkingAreaId, "checkUser.parkingAreaId");
     return {
       status: true,
       firstName: checkUser.firstName,
@@ -137,6 +139,7 @@ const login = async (req: any) => {
       userId: checkUser._id!.toString(),
       roles: role.items.map(item => item.type),
       mobileNumber: checkUser.phoneNumber,
+      parkingAreaId: checkUser.parkingAreaId,
       accessToken: token,
     } as LoginResponse;
   }
@@ -246,14 +249,25 @@ const resetPassword = async (
 
 const updateUser = async (
   updateUserRequest: UpdateUserRequest,
-  userData: UserJWT
+  userId: string
 ): Promise<CreatedUpdatedResponse> => {
+  const data:any={};
+      if(updateUserRequest?.addRole){
+        data.$addToSet = {role:updateUserRequest?.addRole};
+        delete updateUserRequest.addRole;
+      }
+      if(updateUserRequest?.removeRole){
+        data.$pull = {role:updateUserRequest?.removeRole};
+        delete updateUserRequest.removeRole;
+      }
+      data.$set = updateUserRequest;
+
   const valResult =
     UserValidator.updateUserValidator(updateUserRequest);
   if (valResult.error) throw new Error(valResult.error.message);
   const id: string | null = await UserRepository.updateUser(
-    updateUserRequest,
-    userData.userId
+    data,
+    userId
   );
   if (id != null) {
     return { status: true, id } as CreatedUpdatedResponse;
@@ -265,6 +279,12 @@ const getUserByMobileNumber = async (mobileNumber: string): Promise<UserModel | 
   const user: UserModel | null = await UserRepository.findByMobileNumber(mobileNumber);
   return user;
 };  
+
+const getUserByEmail = async (email: string): Promise<UserModel | null> => {
+  const user: UserModel | null = await UserRepository.findByEmail(email);
+  return user;
+};
+
 
 const adminUpdateUser = async (
   adminUpdateUserRequest: AdminUpdateUserRequest,
@@ -450,7 +470,8 @@ export default {
   getPendingOwnersCount,
   checkDuplicateEntry,
   getUserByMobileNumber,
-  deleteUser
+  deleteUser,
+  getUserByEmail
 };
 
 

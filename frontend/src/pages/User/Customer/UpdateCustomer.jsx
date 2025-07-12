@@ -446,6 +446,7 @@ const UpdateCustomer = () => {
           formDataToSend.append(key, value); // string, number, etc.
         }
       });
+      console.log(formDataToSend);
       await axios.patch(
         `${import.meta.env.VITE_BACKEND_ADMIN_URL}/v1/users/update/${id}`,
         formDataToSend,

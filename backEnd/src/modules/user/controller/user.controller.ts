@@ -40,6 +40,7 @@ export const getUser = async (req: Request, res: Response) => {
       await UserService.getUser(req.params.id);
     res.status(200).json(response);
   } catch (error: any) {
+    console.log(error)
     res.status(400).json(errorResponse(error.message));
   }
 };
@@ -47,13 +48,22 @@ export const getUser = async (req: Request, res: Response) => {
 export const getUserByMobileNumber = async (req: Request, res: Response) => {
   try {
     const response: UserModel | null = await UserService.getUserByMobileNumber(req.params.mobileNumber);
-    if(response){
+    if (response) {
       res.status(200).json(response);
     }
-    else{
+    else {
       console.log("User not found");
       res.status(400).json(errorResponse("User not found"));
     }
+  } catch (error: any) {
+    res.status(400).json(errorResponse(error.message));
+  }
+};
+
+export const getUserByEmail = async (req: Request, res: Response) => {
+  try {
+    const response: UserModel | null = await UserService.getUserByEmail(req.params.email);
+    res.status(200).json(response);
   } catch (error: any) {
     res.status(400).json(errorResponse(error.message));
   }
@@ -67,7 +77,7 @@ export const saveUser = async (req: Request, res: Response) => {
       );
     res.status(201).json(response);
   } catch (error: any) {
-     console.log(error.message)
+    console.log(error.message)
     res.status(400).json(errorResponse(error.message));
   }
 };
@@ -75,7 +85,7 @@ export const saveUser = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const response: LoginResponse = await UserService.login(req);
-    console.log(response.accessToken,"response");
+    console.log(response.accessToken, "response");
     res.cookie('token', response.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -111,7 +121,7 @@ export const getCurrentUser = async (req: any, res: Response) => {
   try {
     // The user data is already available from the checkToken middleware
     const userData = req.userData;
-    
+
     if (!userData) {
       res.status(401).json(errorResponse('User not authenticated'));
       return;
@@ -119,7 +129,7 @@ export const getCurrentUser = async (req: any, res: Response) => {
 
     // Get full user details from database
     const user = await UserService.getUser(userData.userId);
-    
+
     res.status(200).json({
       status: true,
       user: user.user,
@@ -136,7 +146,7 @@ export const getCurrentUser = async (req: any, res: Response) => {
 
 export const sendOTP = async (req: Request, res: Response) => {
   console.log("dasdsadsdsdsd");
-  
+
   try {
     const response: BaseResponse = await UserService.forgotPassword(
       req.body as unknown as ForgotPasswordRequest
@@ -173,8 +183,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
 export const changePasswordLoggedIn = async (req: any, res: Response) => {
   try {
-    console.log("hiiiiiiiiiii");
-    
+
     const response: BaseResponse = await UserService.changePasswordLoggedIn(
       req.body as unknown as ChangePasswordLoggedInRequest,
       req.userData as unknown as UserJWT
@@ -187,13 +196,17 @@ export const changePasswordLoggedIn = async (req: any, res: Response) => {
 
 export const updateUser = async (req: any, res: Response) => {
   try {
+    const id = req.params.id;
+    const request = req.body as any;
+    
     const response: CreatedUpdatedResponse =
       await UserService.updateUser(
-        req.body as unknown as UpdateUserRequest,
-        req.userData as unknown as UserJWT
+        request as unknown as UpdateUserRequest,
+        id as string
       );
     res.status(201).json(response);
   } catch (error: any) {
+    console.log(error)
     res.status(400).json(errorResponse(error.message));
   }
 };
@@ -206,14 +219,14 @@ export const adminUpdateUser = async (
     try {
       Object.keys(req.body).forEach(key => {
         const value = req.body[key];
-  
+
         // Parse boolean strings
         if (value === 'true') {
           req.body[key] = true;
         } else if (value === 'false') {
           req.body[key] = false;
         }
-  
+
         // Parse arrays or objects (stringified JSON)
         else if (typeof value === 'string' && (value.trim().includes('[') || value.trim().includes('{'))) {
           try {
@@ -223,16 +236,16 @@ export const adminUpdateUser = async (
           }
         }
       });
-  
-     
+
+    
     } catch (error) {
       console.error("Error parsing form data", error);
       return res.status(400).json({ message: "Invalid form data" });
     }
-   
-    
-    console.log(req.body,"req.body");
-    
+
+
+    console.log(req.body, "req.body");
+
     const response: CreatedUpdatedResponse =
       await UserService.adminUpdateUser(
         req.body as unknown as AdminUpdateUserRequest,
@@ -273,14 +286,14 @@ export const getPendingOwnersCount = async (req: Request, res: Response) => {
     res.status(400).json(errorResponse(error.message));
   }
 };
- 
+
 export const checkDuplicateEntry = async (req: Request, res: Response) => {
   try {
     const response: BaseResponse = await UserService.checkDuplicateEntry(req.body);
-    if(response.status){  
+    if (response.status) {
       res.status(200).json(response);
     }
-    else{
+    else {
       res.status(400).json(response);
     }
   } catch (error: any) {
@@ -297,3 +310,5 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(400).json(errorResponse(error.message));
   }
 };
+
+

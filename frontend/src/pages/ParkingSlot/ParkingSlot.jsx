@@ -1,19 +1,20 @@
 import ViewParkingArea from "../User/ParkingOwner/ParkingArea/ViewParkingArea";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 
 const ParkingSlot = () => {
-    const { authState } = useAuth();
-    const [parkingOwnerId, setParkingOwnerId] = useState(null);
+    const { id } = useParams();
+    
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
 
                 const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/profile/${authState.user.userId}`, { withCredentials: true });
-                setParkingOwnerId(response.data.data.parkingOwnerId);
+                console.log(response.data.data.parkingAreaID, "response.data.data.parkingAreaID");
+                setParkingOwnerId(response.data.data.parkingAreaID);
             }
             catch (error) {
                 console.error("Error fetching parking owner id:", error);

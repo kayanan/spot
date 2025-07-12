@@ -127,10 +127,11 @@ export const getParkingAreaByIdController = async (req: Request, res: Response) 
 
 export const getAllParkingAreasController = async (req: Request, res: Response) => {
     try {
-        const result = await getAllParkingAreas();
+        const result = await getAllParkingAreas(req.query);
         res.status(200).json({
             success: true,
-            data: result,
+            count: result.total,
+            data: result.data,
         });
     } catch (error) {
         res.status(500).json({

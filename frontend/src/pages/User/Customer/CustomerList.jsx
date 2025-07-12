@@ -19,6 +19,7 @@ const CustomerList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const usersPerPage = 10;
 
   useEffect(() => {
@@ -26,11 +27,20 @@ const CustomerList = () => {
       setLoading(true);
       try {
         const { data } = await axios.get(
-          `${import.meta.env.VITE_BACKEND_ADMIN_URL}/v1/users/list?isActive=${status}&role=CUSTOMER`,
-          { withCredentials: true }
+          `${import.meta.env.VITE_BACKEND_ADMIN_URL}/v1/users/list`,
+
+          { withCredentials: true,
+            params: {
+              isActive: status,
+              role: "CUSTOMER",
+              page: currentPage,
+              limit: usersPerPage,
+            }
+           }
         );
         console.log(data.users);
         setUsers(data.users);
+        setTotalPages(data.totalPages);
       } catch (error) {
         console.error("Error fetching users:", error.message);
         toast.error("Failed to fetch users. Please try again.");
@@ -52,10 +62,6 @@ const CustomerList = () => {
         : true)
   );
 
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
@@ -98,7 +104,7 @@ const CustomerList = () => {
               </tr>
             </thead>
             <tbody>
-              {currentUsers.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user._id} className="border-t hover:bg-cyan-50">
                   <td className="py-3 px-4">
                     <img

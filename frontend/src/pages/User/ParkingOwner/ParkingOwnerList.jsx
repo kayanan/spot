@@ -12,11 +12,15 @@ const ParkingOwnerList = () => {
   const [filteredOwners, setFilteredOwners] = useState([]);
   const [pendingOwnersCount, setPendingOwnersCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [filters, setFilters] = useState( {
     role: "PARKING_OWNER",
     approvalStatus: "true",
-    isActive: "true"
+    isActive: "true",
+    page: 1,
+    limit: 10
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,9 +38,9 @@ const ParkingOwnerList = () => {
             }
            }
         );
-
         setParkingOwners(res.data.users);
         setFilteredOwners(res.data.users);
+        setTotalPages(res.data.totalPages);
       } catch (error) {
         console.error("Error fetching parking owners:", error.message);
       } finally {
@@ -276,6 +280,24 @@ const ParkingOwnerList = () => {
           </div>
         </div>
       )}
+       {totalPages > 1 && (
+            <div className="flex justify-center mt-4 space-x-4">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                className="w-24 px-4 py-2 mb-6 bg-gray-300 hover:bg-gray-600 rounded-md text-center disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                className="w-24 px-4 py-2 mb-6 bg-gray-300 hover:bg-gray-600 rounded-md text-center disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
     </div>
   );
 };

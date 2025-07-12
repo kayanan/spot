@@ -168,12 +168,22 @@ const saveUserValidator = (data: any) => {
       }).regex(nicPattern, {
         message: `NIC should have a maximum length of 12 digits`,
       }),
+    parkingAreaId: z.string({
+      required_error: 'ParkingAreaId is required',
+      invalid_type_error: `ParkingAreaId should be a type of 'string'`,
+    }).optional().nullable(),
   });
   return schema.safeParse(data);
 };
 
 const updateUserValidator = (data: any) => {
   const schema = z.object({
+    addRole: z.array(z.string({
+      required_error: 'Role is required',
+    })).optional().nullable(),
+    removeRole: z.array(z.string({
+      required_error: 'Role is required',
+    })).optional().nullable(),
     firstName: z
       .string({
         required_error: 'FirstName is required',
@@ -181,7 +191,7 @@ const updateUserValidator = (data: any) => {
       })
       .max(30, {
         message: `FirstName should have a maximum length of 30 characters`,
-      }),
+      }).optional().nullable(),
     lastName: z
       .string({
         required_error: 'LastName is required',
@@ -189,7 +199,7 @@ const updateUserValidator = (data: any) => {
       })
       .max(30, {
         message: `LastName should have a maximum length of 30 characters`,
-      }),
+      }).optional().nullable(),
     phoneNumber: z
       .string({
         required_error: 'Phonenumber is required',
@@ -197,48 +207,45 @@ const updateUserValidator = (data: any) => {
       })
       .regex(phoneNumberPattern, {
         message: `Phone number should have a maximum length of 10 digits`,
-      }),
+      }).optional().nullable(),
     nic: z.string({
       required_error: 'NIC is required',
       invalid_type_error: `NIC should be a type of 'string'`,
     }).regex(nicPattern, {
       message: `NIC should have a maximum length of 12 digits`,
-    }),
+    }).optional().nullable(),
     email: z.string({
       required_error: 'Email is required',
       invalid_type_error: `Email should be a type of 'string'`,
     }).email({
       message: 'Email should be a valid email',
-    }),
+    }).optional().nullable(),
     profileImage: z.string().optional().nullable(),
-    address: z.object({
       line1: z.string({
         required_error: 'Address1 is required',
         invalid_type_error: `Address1 should be a type of 'string'`,
-      }),
+      }).optional().nullable(),
       line2: z.string({
-       
         invalid_type_error: `Address2 should be a type of 'string'`,
       }).optional().nullable(),
       city: z.any({
         required_error: 'City is required', 
       }).refine((val) =>  Types.ObjectId.isValid(val), {
         message: 'Invalid ObjectId for city',
-      }),
+      }).optional().nullable(),
       district: z.any({
         required_error: 'District is required',
       }).refine((val) =>  Types.ObjectId.isValid(val), {
         message: 'Invalid ObjectId for district',
-      }),
+      }).optional().nullable(),
       province: z.any({
         required_error: 'Province is required',
       }).refine((val) =>  Types.ObjectId.isValid(val), {
         message: 'Invalid ObjectId for province',
-      }),
+      }).optional().nullable(),
       zipCode: z.string({
         invalid_type_error: `ZipCode should be a type of 'string'`,
       }).optional().nullable(),
-    }).optional().nullable(),
     bankDetails: z.array(
       z.object({
         name: z
@@ -276,40 +283,7 @@ const updateUserValidator = (data: any) => {
         isDefault: z.boolean({
           required_error: 'IsDefault is required',
           invalid_type_error: `IsDefault should be a type of 'boolean'`,
-        }),
-      })
-    ).optional().nullable(),
-    cardDetails: z.array(
-      z.object({
-        nameOnCard: z.string(
-          {
-            required_error: 'NameOnCard is required',
-            invalid_type_error: `NameOnCard should be a type of 'string'`,
-          }
-        ),
-        cardNumber: z.string(
-          {
-            required_error: 'CardNumber is required',
-            invalid_type_error: `CardNumber should be a type of 'string'`,
-          }
-        ),
-        expiryDate: z.string(
-          {
-            required_error: 'ExpiryDate is required',
-            invalid_type_error: `ExpiryDate should be a type of 'string'`,
-          }
-        ).regex(expiryDatePattern, {
-          message: `ExpiryDate should be in the format MM/YY`,
-        }),
-        cvv: z.string(
-          {
-            required_error: 'CVV is required',
-            invalid_type_error: `CVV should be a type of 'string'`,
-          }
-        ).regex(cvvPattern, {
-          message: `CVV should have a maximum length of 3 digits`,
-        }),
-        
+        }).optional().nullable(),
       })
     ).optional().nullable(),
     vehicleDetails: z.array(
@@ -323,6 +297,10 @@ const updateUserValidator = (data: any) => {
         isDefault: z.boolean().optional().nullable(),
       })
     ).optional().nullable(),
+    parkingAreaId: z.string({
+      required_error: 'ParkingAreaId is required',
+      invalid_type_error: `ParkingAreaId should be a type of 'string'`,
+    }).optional().nullable(),
   });
   return schema.safeParse(data);
 };
@@ -356,8 +334,6 @@ const adminUpdateUserValidator = (data: any) => {
       .regex(phoneNumberPattern, {
         message: `Phone number should have a maximum length of 10 digits`,
       }).optional().nullable(),
-  
-    address: z.object({
       line1: z.string(
         {
           required_error: 'Address1 is required',
@@ -401,7 +377,6 @@ const adminUpdateUserValidator = (data: any) => {
       ).regex(zipCodePattern, {
         message: `ZipCode should have a maximum length of 5 digits`,
       }).optional().nullable(),
-    }).optional().nullable(),
     profileImage: z.string(
       {
         invalid_type_error: `ProfileImage should be a type of 'string'`,
@@ -445,53 +420,6 @@ const adminUpdateUserValidator = (data: any) => {
           required_error: 'IsDefault is required',
           invalid_type_error: `IsDefault should be a type of 'boolean'`,
         }),
-      })
-    ).optional().nullable(),
-    cardDetails: z.array(
-      z.object({
-        nameOnCard: z
-          .string({
-            required_error: 'Name is required',
-            invalid_type_error: `Name should be a type of 'string'`,
-          })
-          .nonempty({
-            message: 'Name cannot be an empty field ',
-          }),
-        cardNumber: z
-          .string({
-            required_error: 'Card Number is required',
-            invalid_type_error: `Card Number should be a type of 'string'`,
-          })
-          .nonempty({
-            message: 'Card Number cannot be an empty field ',
-          }).regex(cardNumberPattern, {
-            message: `Card Number should have a maximum length of 16 digits`,
-          }),
-        expiryDate: z
-          .string({
-            required_error: 'Expiry Date is required',
-            invalid_type_error: `Expiry Date should be a type of 'string'`,
-          })
-          .nonempty({
-            message: 'Expiry Date cannot be an empty field ',
-          }).regex(expiryDatePattern, {
-            message: `Expiry Date should be in the format MM/YY`,
-          }),
-        cvv: z
-          .string({
-            required_error: 'CVV is required',
-            invalid_type_error: `CVV should be a type of 'string'`,
-          })
-          .nonempty({
-            message: 'CVV cannot be an empty field ',
-          }).regex(cvvPattern, {
-            message: `CVV should have a maximum length of 3 digits`,
-          }),
-          isDefault: z.boolean({
-          required_error: 'IsDefault is required',
-          invalid_type_error: `IsDefault should be a type of 'boolean'`,
-        }),
-
       })
     ).optional().nullable(),
     vehicleDetails: z.array(

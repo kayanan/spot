@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
 import { FaFilter, FaDownload, FaEye, FaCalendarAlt, FaMapMarkerAlt, FaCreditCard, FaMoneyBillWave, FaUniversity, FaCheckCircle, FaTimesCircle, FaClock } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
+import { useAuth } from '../../../context/AuthContext';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ListParkingPayments = () => {
+    const { authState } = useAuth();
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [parkingAreas, setParkingAreas] = useState([]);
     const [filters, setFilters] = useState({
-        startDate: '',
-        endDate: '',
-        parkingArea: '',
+        startDate: authState.privilege === "PARKING_MANAGER" ? new Date().toISOString().split('T')[0] : '',
+        endDate: authState.privilege === "PARKING_MANAGER" ? new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0] : '',
+        parkingArea: authState.privilege === "PARKING_MANAGER" ? authState.user.parkingAreaId : '',
         paymentStatus: '',
-        paymentType: ''
+        paymentType: '',
+        page: 1,
+        limit: 9999,
+        parkingOwner: authState.privilege === "PARKING_OWNER" ? authState.user.userId: ''
     });
-    console.log("payments--------------------------------",payments)
     const [showFilters, setShowFilters] = useState(false);
     const [stats, setStats] = useState({
         total: 0,
@@ -46,7 +50,11 @@ const ListParkingPayments = () => {
 
     const fetchParkingAreas = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/parking-area`);
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/parking-area`,{
+                params: {
+                    parkingOwner: authState.privilege === "PARKING_OWNER" ? authState.user.userId: ''
+                }
+            });
             setParkingAreas(response.data.data || []);
         } catch (error) {
             console.error('Error fetching parking areas:', error);
@@ -62,7 +70,8 @@ const ListParkingPayments = () => {
                     endDate: filters.endDate,
                     parkingArea: filters.parkingArea,
                     paymentStatus: filters.paymentStatus,
-                    paymentType: filters.paymentType
+                    paymentType: filters.paymentType,
+                    parkingOwner: filters.parkingOwner
                 }
             });
             const paymentData = response.data.data || [];
@@ -103,11 +112,14 @@ const ListParkingPayments = () => {
 
     const clearFilters = () => {
         setFilters({
-            startDate: '',
-            endDate: '',
-            parkingArea: '',
+            startDate: authState.privilege === "PARKING_MANAGER" ? new Date().toISOString().split('T')[0] : '',
+            endDate: authState.privilege === "PARKING_MANAGER" ? new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0] : '',
+            parkingArea: authState.privilege === "PARKING_MANAGER" ? authState.user.parkingAreaId : '',
             paymentStatus: '',
-            paymentType: ''
+            paymentType: '',
+            page: 1,
+            limit: 9999,
+            parkingOwner: authState.privilege === "PARKING_OWNER" ? authState.user.userId: ''
         });
         fetchPayments();
     };
@@ -220,7 +232,7 @@ const ListParkingPayments = () => {
             </div>
 
             {/* Filters and Actions */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            {authState.privilege === "PARKING_MANAGER" ? null : (<div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
                 <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -347,7 +359,7 @@ const ListParkingPayments = () => {
                         </div>
                     </div>
                 )}
-            </div>
+            </div>)}
 
             {/* Payments Table */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

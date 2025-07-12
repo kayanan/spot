@@ -17,6 +17,8 @@ export interface CreateUserRequest extends UserRequest {
 }
 
 export interface UpdateUserRequest extends UserRequest {
+  addRole?: string;
+  removeRole?: string;
   id: string;
   firstName?: string;
   lastName?: string;
@@ -32,7 +34,6 @@ export interface UpdateUserRequest extends UserRequest {
   vehicle?:Array<string>;
   phoneNumber?: string;
   profileImage?: string;
-  bankDetails?: Array<AccountDetail>;
   accountDetails?: Array<AccountDetail>;
   
 }

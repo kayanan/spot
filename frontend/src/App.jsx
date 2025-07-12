@@ -113,7 +113,7 @@ const AppRoutes = () => {
   
 
 
-  const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/parking-owner/spot-details" || window.location.pathname === "/customer/register" || window.location.pathname === "/login-as"; 
+  const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/parking-owner/spot-details" || window.location.pathname === "/customer/register" || window.location.pathname === "/login-as" || window.location.pathname === "/forgot-password";
   //for testing purpose
   // const isLoginPage = false;
   // authState.isAuthenticated = true;
@@ -211,7 +211,7 @@ const AppRoutes = () => {
             <Route path="/parking-subscription-fee/update/:id" element={<ProtectedRoute privilege={["ADMIN"]}><UpdateSubscriptionFee /></ProtectedRoute>} />
             {/* parking subscription fee route end */}
             {/* reports route start */}
-            <Route path="/reports/parking-payments" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ListParkingPayments /></ProtectedRoute>} />
+            <Route path="/reports/parking-payments" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER","PARKING_MANAGER"]}><ListParkingPayments /></ProtectedRoute>} />
             <Route path="/reports/admin" element={<ProtectedRoute privilege={["ADMIN"]}><AdminReport /></ProtectedRoute>} />
             <Route path="/reports/parking-owner" element={<ProtectedRoute privilege={["ADMIN", "PARKING_OWNER"]}><ParkingOwnerReport /></ProtectedRoute>} />
             {/* <Route path="/reports/parking-reservations" element={<ListParkingReservations />} />
@@ -231,7 +231,7 @@ const AppRoutes = () => {
             {/* customer route end */}
 
             {/* parking slot route start */}
-            <Route path="/parking-slot" element={<ProtectedRoute privilege={["ADMIN", "PARKING_MANAGER", "PARKING_OWNER"]}><ParkingSlot /></ProtectedRoute>} />
+            <Route path="/parking-slot/:id" element={<ProtectedRoute privilege={["ADMIN", "PARKING_MANAGER", "PARKING_OWNER"]}><ViewParkingArea /></ProtectedRoute>} />
             {/* parking slot route end */}
 
             <Route path="/" element={<Navigate to="/login" replace />} />

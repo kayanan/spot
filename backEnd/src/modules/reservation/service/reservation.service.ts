@@ -110,9 +110,12 @@ export const getAllReservationsService = async () => {
   return await findAllReservations();
 };
 
-export const getReservationsByUserService = async (filters: { userId: string, status: string, paymentStatus: string, startDate: string, endDate: string, searchTerm: string, page: number, limit: number, isParked: boolean }) => {
+export const getReservationsByUserService = async (filters: { status: string, paymentStatus: string, startDate: string, endDate: string, searchTerm: string, page: number, limit: number, isParked: boolean },userId:string) => {
   const filterData: mongoose.FilterQuery<ReservationModel> = {
     isDeleted: { $ne: true },
+  }
+  if(userId){
+    filterData.user = userId;
   }
   if (filters.isParked) {
     filterData.isParked = filters.isParked;

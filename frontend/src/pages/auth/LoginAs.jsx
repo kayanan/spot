@@ -19,7 +19,7 @@ const LoginAs = () => {
     const [userRoles, setUserRoles] = useState(location.state.roles || []);
     const [loading, setLoading] = useState(false);
     const [selectedRole, setSelectedRole] = useState(null);
-    const { loginAs } = useAuth();
+    const { loginAs, logout } = useAuth();
     // useEffect(() => {
     //     fetchUserRoles();
     // }, []);
@@ -71,18 +71,6 @@ const LoginAs = () => {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await axios.post(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/auth/logout`, {}, {
-                withCredentials: true,
-            });
-            toast.success("Logged out successfully");
-            navigate("/login");
-        } catch (error) {
-            console.error("Error logging out:", error);
-            toast.error("Failed to logout");
-        }
-    };
 
     const getRoleDisplayName = (role) => {
         const roleNames = {
@@ -147,10 +135,10 @@ const LoginAs = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
-            <div className="max-w-4xl mx-auto px-4">
+            <div className="max-w-4xl mx-auto px-4 mt-10">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-2">Choose Your Role</h1>
+                    <h1 className="text-4xl font-bold text-gray-800 mb-10">Choose Your Role</h1>
                     <p className="text-gray-600 text-lg">
                         Select the role you'd like to access today
                     </p>
@@ -223,9 +211,9 @@ const LoginAs = () => {
                 </div>
 
                 {/* Logout Section */}
-                <div className="text-center">
+                <div className="text-center my-20">
                     <button
-                        onClick={handleLogout}
+                        onClick={logout}
                         className="inline-flex items-center space-x-2 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-300"
                     >
                         <FaSignOutAlt />
@@ -233,12 +221,7 @@ const LoginAs = () => {
                     </button>
                 </div>
 
-                {/* Help Text */}
-                <div className="mt-8 text-center">
-                    <p className="text-gray-500 text-sm">
-                        You can switch between roles at any time from your profile menu
-                    </p>
-                </div>
+
             </div>
         </div>
     );

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaUsers, FaMapMarkerAlt, FaCar, FaEdit, FaTrash, FaEye, FaSearch, FaFilter } from 'react-icons/fa';
+import { EyeIcon, PencilAltIcon, TrashIcon } from '@heroicons/react/outline';
 import { toast, ToastContainer } from 'react-toastify';
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ConfirmationPopup from '../../utils/ConfirmationPopup';
 
 import ParkingAreaList from "../User/ParkingOwner/ParkingArea/ParkingAreaList";
 
@@ -13,15 +15,18 @@ const ParkingAreaHomePage = () => {
     const [staffMembers, setStaffMembers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('parking-areas');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showStaffModal, setShowStaffModal] = useState(false);
     const [selectedParkingArea, setSelectedParkingArea] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
     const [roles, setRoles] = useState([]);
-    const [submittingParkingArea, setSubmittingParkingArea] = useState(false);
-    const [submittingStaff, setSubmittingStaff] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [parkingOwner, setParkingOwner] = useState(null);
+    const [email, setEmail] = useState('');
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+    const [showselectPrkingAreaModal, setShowselectPrkingAreaModal] = useState(false);
+    const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
+    const [selectedStaffId, setSelectedStaffId] = useState(null);
+    const [showMessage, setShowMessage] = useState(true);
+    const [error, setError] = useState({});
     const { authState } = useAuth();
     const navigate = useNavigate();
     // Form states
@@ -30,11 +35,10 @@ const ParkingAreaHomePage = () => {
     const [staffForm, setStaffForm] = useState({
         firstName: '',
         lastName: '',
-        email: '',
-        phone: '',
-        password: '',
-        role: 'USER',
-        parkingAreaId: ''
+        phoneNumber: '',
+        role: 'PARKING_MANAGER',
+        parkingAreaId: "",
+        nic: ""
     });
 
     useEffect(() => {
@@ -51,7 +55,8 @@ const ParkingAreaHomePage = () => {
         } catch (error) {
             console.error('Error fetching roles:', error);
         }
-    };
+    }
+
 
     const fetchParkingAreas = async () => {
         setLoading(true);
@@ -68,7 +73,7 @@ const ParkingAreaHomePage = () => {
 
     const fetchStaffMembers = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user?role=USER`);
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user?role=PARKING_MANAGER`);
             setStaffMembers(response.data.users || []);
         } catch (error) {
             console.error('Error fetching staff members:', error);
@@ -86,79 +91,114 @@ const ParkingAreaHomePage = () => {
     }
 
 
+    const checkEmailExists = async (email) => {
+        setSubmitting(true);
+        try {
+
+            const response = await axios.get(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/email/${email}`);
+            console.log(response.data._id, "response.data");
+            if (response.data) {
+                setStaffForm({ id: response.data._id, addRole: [roles.find(role => role.type === 'PARKING_MANAGER')?._id] });
+                return true;
+            }
+            else {
+                return false;
+            }
+        } catch (error) {
+            console.error('Error checking email:', error);
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    const addStaff = async (e) => {
+        e.preventDefault();
+        if (await checkEmailExists(email)) {
+            setShowselectPrkingAreaModal(true);
+            setShowEmailModal(false);
+
+            return;
+        }
+        else {
+            setShowEmailModal(false);
+            setShowAddStaffModal(true);
+
+            return;
+        }
+
+    }
+
+
 
 
     const handleAddStaff = async (e) => {
         e.preventDefault();
+
         try {
-            // Find the role ID for the selected role type
-            const selectedRole = roles.find(role => role.type === staffForm.role);
-            if (!selectedRole) {
-                toast.error('Selected role not found');
-                return;
-            }
+
 
             const staffData = {
                 firstName: staffForm.firstName,
                 lastName: staffForm.lastName,
-                email: staffForm.email,
-                phoneNumber: staffForm.phone,
-                password: staffForm.password,
-                role: [selectedRole._id], // Use the role ID
+                email: email,
+                phoneNumber: staffForm.phoneNumber,
+                role: [roles.find(role => role.type === staffForm.role)?._id],
                 isActive: true,
-                parkingAreaId: staffForm.parkingAreaId || undefined
+                nic: staffForm.nic,
+                parkingAreaId: staffForm?.parkingAreaId
             };
+
+            const duplicateResponse = await axios.post(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/check-duplicate-entry`, staffData);
 
             const response = await axios.post(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/signup`, staffData);
             if (response.data.status) {
                 toast.success('Staff member added successfully');
-                setShowStaffModal(false);
-                setStaffForm({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'USER', parkingAreaId: '' });
+                setShowAddStaffModal(false);
+                setShowselectPrkingAreaModal(false);
+                setShowEmailModal(false);
+                setEmail('');
+                setStaffForm({ firstName: '', lastName: '', phoneNumber: '', nic: '', role: ['PARKING_MANAGER'], parkingAreaId: '' });
                 fetchStaffMembers();
             }
         } catch (error) {
-            console.error('Error adding staff member:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to add staff member';
-            toast.error(errorMessage);
-        }
-    };
-
-
-    const handleDeleteStaff = async (staffId) => {
-        if (window.confirm('Are you sure you want to delete this staff member?')) {
-            try {
-                const response = await axios.delete(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/${staffId}`);
-                if (response.data.success) {
-                    toast.success('Staff member deleted successfully');
-                    fetchStaffMembers();
-                }
-            } catch (error) {
-                console.error('Error deleting staff member:', error);
-                const errorMessage = error.response?.data?.message || 'Failed to delete staff member';
-                toast.error(errorMessage);
+            if (error.response.data.errorResponse) {
+                console.log(error.response.data.errorResponse);
+                setError({ ...error.response.data.errorResponse });
+            }
+            else {
+                toast.error(error.response.data.message);
             }
         }
     };
 
-    const handleStaffButton = (parkingArea) => {
-        setSelectedParkingArea(parkingArea);
-        setActiveTab('staff');
-    };
+    const updateStaff = async (e) => {
+        setEmail("");
+        e.preventDefault();
+        updateUser(staffForm);
 
-
-
-    const getStatusBadgeClass = (status) => {
-        switch (status) {
-            case 'active':
-                return 'bg-green-100 text-green-800';
-            case 'inactive':
-                return 'bg-red-100 text-red-800';
-            case 'maintenance':
-                return 'bg-yellow-100 text-yellow-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
+    }
+    const updateUser = async (staffForm) => {
+        const id = staffForm.id;
+        delete staffForm.id;
+        try {
+            console.log(id, "id");
+            const response = await axios.patch(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/update/${id}`, staffForm);
+            if (response.data.status) {
+                toast.success('Staff member updated successfully');
+                fetchStaffMembers();
+                setShowselectPrkingAreaModal(false);
+                setShowAddStaffModal(false);
+                setShowEmailModal(false);
+                setEmail('');
+                setStaffForm({ firstName: '', lastName: '', phoneNumber: '', nic: '', role: ['PARKING_MANAGER'], parkingAreaId: '' });
+                fetchStaffMembers();
+            }
+        } catch (error) {
+            console.error('Error updating staff member:', error);
+            toast.error('Failed to update staff member');
         }
-    };
+    }
+
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
@@ -175,8 +215,8 @@ const ParkingAreaHomePage = () => {
                         <button
                             onClick={() => setActiveTab('parking-areas')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'parking-areas'
-                                    ? 'border-cyan-500 text-cyan-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-cyan-500 text-cyan-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             <FaMapMarkerAlt className="inline mr-2" />
@@ -185,8 +225,8 @@ const ParkingAreaHomePage = () => {
                         <button
                             onClick={() => setActiveTab('staff')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'staff'
-                                    ? 'border-cyan-500 text-cyan-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-cyan-500 text-cyan-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                         >
                             <FaUsers className="inline mr-2" />
@@ -198,101 +238,6 @@ const ParkingAreaHomePage = () => {
                 {/* Tab Content */}
                 <div className="p-6">
                     {activeTab === 'parking-areas' && parkingOwner && (
-                        // <div>
-                        //     {/* Header with Add Button */}
-                        //     <div className="flex justify-between items-center mb-6">
-                        //         <div className="flex items-center space-x-4">
-                        //             <div className="relative">
-                        //                 <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        //                 <input
-                        //                     type="text"
-                        //                     placeholder="Search parking areas..."
-                        //                     value={searchTerm}
-                        //                     onChange={(e) => setSearchTerm(e.target.value)}
-                        //                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        //                 />
-                        //             </div>
-                        //             <select
-                        //                 value={filterStatus}
-                        //                 onChange={(e) => setFilterStatus(e.target.value)}
-                        //                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        //             >
-                        //                 <option value="all">All Status</option>
-                        //                 <option value="active">Active</option>
-                        //                 <option value="inactive">Inactive</option>
-                        //                 <option value="maintenance">Maintenance</option>
-                        //             </select>
-                        //         </div>
-                        //         <button
-                        //             onClick={() => setShowAddModal(true)}
-                        //             className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition-colors"
-                        //         >
-                        //             <FaPlus />
-                        //             Add Parking Area
-                        //         </button>
-                        //     </div>
-
-                        //     {/* Parking Areas Grid */}
-                        //     {loading ? (
-                        //         <div className="text-center py-8">
-                        //             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600 mx-auto"></div>
-                        //             <p className="mt-4 text-gray-600">Loading parking areas...</p>
-                        //         </div>
-                        //     ) : filteredParkingAreas.length === 0 ? (
-                        //         <div className="text-center py-8">
-                        //             <FaMapMarkerAlt className="mx-auto h-12 w-12 text-gray-400" />
-                        //             <h3 className="mt-2 text-sm font-medium text-gray-900">No parking areas found</h3>
-                        //             <p className="mt-1 text-sm text-gray-500">Get started by creating a new parking area.</p>
-                        //         </div>
-                        //     ) : (
-                        //         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        //             {filteredParkingAreas.map((area) => (
-                        //                 <div key={area._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                        //                     <div className="p-6">
-                        //                         <div className="flex items-center justify-between mb-4">
-                        //                             <h3 className="text-lg font-semibold text-gray-900">{area.name}</h3>
-                        //                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(area.status)}`}>
-                        //                                 {area.status}
-                        //                             </span>
-                        //                         </div>
-                        //                         <p className="text-gray-600 mb-4">{area.address}</p>
-                        //                         <div className="grid grid-cols-2 gap-4 mb-4">
-                        //                             <div>
-                        //                                 <p className="text-sm text-gray-500">Total Slots</p>
-                        //                                 <p className="font-semibold text-gray-900">{area.totalSlots || 'N/A'}</p>
-                        //                             </div>
-                        //                             <div>
-                        //                                 <p className="text-sm text-gray-500">Hourly Rate</p>
-                        //                                 <p className="font-semibold text-gray-900">LKR {area.hourlyRate || 'N/A'}</p>
-                        //                             </div>
-                        //                         </div>
-                        //                         <div className="flex space-x-2">
-                        //                             <button
-                        //                                 onClick={() => handleStaffButton(area)}
-                        //                                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition-colors text-sm"
-                        //                             >
-                        //                                 <FaUsers />
-                        //                                 Staff
-                        //                             </button>
-                        //                             <button className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
-                        //                                 <FaEdit />
-                        //                             </button>
-                        //                             <button 
-                        //                                 onClick={() => handleDeleteParkingArea(area._id)}
-                        //                                 className="px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                        //                             >
-                        //                                 <FaTrash />
-                        //                             </button>
-                        //                         </div>
-                        //                     </div>
-                        //                 </div>
-                        //             ))}
-                        //         </div>
-                        //     )}
-                        // </div>
-                        // <div>
-                        //   <ParkingAreaList parkingOwner={parkingOwner} userType="owner" />
-                        // </div>
                         <div className="mt-8">
                             <div className="flex gap-4 items-center mb-6">
                                 <h2 className="text-2xl font-bold">Parking Areas</h2>
@@ -320,7 +265,7 @@ const ParkingAreaHomePage = () => {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => setShowStaffModal(true)}
+                                    onClick={() => setShowEmailModal(true)}
                                     className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition-colors"
                                 >
                                     <FaPlus />
@@ -339,9 +284,6 @@ const ParkingAreaHomePage = () => {
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Contact
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Role
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                     Assigned Area
@@ -379,27 +321,30 @@ const ParkingAreaHomePage = () => {
                                                             <div className="text-sm text-gray-900">{staff.email}</div>
                                                             <div className="text-sm text-gray-500">{staff.phoneNumber}</div>
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                                {staff.role?.[0]?.type || 'No Role'}
-                                                            </span>
-                                                        </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {staff.parkingArea?.name || 'Not assigned'}
+                                                            {parkingAreas.find(area => area._id === staff.parkingAreaId)?.name?.toUpperCase() || 'Not assigned'}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                            <div className="flex space-x-2">
-                                                                <button className="text-cyan-600 hover:text-cyan-900">
-                                                                    <FaEye />
-                                                                </button>
-                                                                <button className="text-blue-600 hover:text-blue-900">
-                                                                    <FaEdit />
+                                                            <div className="flex justify-center gap-2 space-x-2">
+                                                                {/* <button 
+                                                                    className="bg-teal-400 hover:bg-teal-600 text-white px-3 py-2 rounded-full"
+                                                                    title="View Staff Details"
+                                                                >
+                                                                    <EyeIcon className="h-5 w-5" />
+                                                                </button> */}
+                                                                <button
+                                                                    onClick={() => { setShowMessage(true); setSelectedStaffId(staff._id); setShowselectPrkingAreaModal(true); setStaffForm({ id: staff._id }); setShowMessage(false) }}
+                                                                    className="bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-2 rounded-full"
+                                                                    title="Edit Staff"
+                                                                >
+                                                                    <PencilAltIcon className="h-5 w-5" />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => handleDeleteStaff(staff._id)}
-                                                                    className="text-red-600 hover:text-red-900"
+                                                                    onClick={() => { setShowConfirmationPopup(true); setSelectedStaffId(staff._id) }}
+                                                                    className="bg-red-500 hover:bg-red-700 text-white px-3 py-2 rounded-full"
+                                                                    title="Delete Staff"
                                                                 >
-                                                                    <FaTrash />
+                                                                    <TrashIcon className="h-5 w-5" />
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -416,13 +361,68 @@ const ParkingAreaHomePage = () => {
             </div>
 
             {/* Add Staff Modal */}
-            {showStaffModal && (
+            {showEmailModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-gray-800">Add Staff Member</h2>
                             <button
-                                onClick={() => setShowStaffModal(false)}
+                                onClick={() => {
+                                    setShowEmailModal(false);
+                                    setEmail('');
+                                }}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <form onSubmit={addStaff}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        placeholder="Enter email address"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end space-x-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowEmailModal(false);
+                                        setEmail('');
+                                    }}
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {submitting ? 'Adding...' : 'Add Staff Member'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {showAddStaffModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-gray-800">Add Staff Member</h2>
+                            <button
+                                onClick={() => setShowAddStaffModal(false)}
                                 className="text-gray-500 hover:text-gray-700"
                             >
                                 ✕
@@ -439,10 +439,14 @@ const ParkingAreaHomePage = () => {
                                             type="text"
                                             required
                                             value={staffForm.firstName}
-                                            onChange={(e) => setStaffForm({ ...staffForm, firstName: e.target.value })}
+                                            onChange={(e) => {
+                                                setStaffForm({ ...staffForm, firstName: e.target.value })
+                                                setError({ ...error, firstName: '' })
+                                            }}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             placeholder="Enter first name"
                                         />
+                                        {error.firstName && <p className="text-red-500 text-sm">{error.firstName}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -452,76 +456,126 @@ const ParkingAreaHomePage = () => {
                                             type="text"
                                             required
                                             value={staffForm.lastName}
-                                            onChange={(e) => setStaffForm({ ...staffForm, lastName: e.target.value })}
+                                            onChange={(e) => {
+                                                setStaffForm({ ...staffForm, lastName: e.target.value })
+                                                setError({ ...error, lastName: '' })
+                                            }}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             placeholder="Enter last name"
                                         />
+                                        {error.lastName && <p className="text-red-500 text-sm">{error.lastName}</p>}
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={staffForm.email}
-                                        onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        placeholder="Enter email"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Phone
+                                        Mobile Number
                                     </label>
                                     <input
                                         type="tel"
                                         required
-                                        value={staffForm.phone}
-                                        onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
+                                        value={staffForm.phoneNumber}
+                                        onChange={(e) => {
+                                            setStaffForm({ ...staffForm, phoneNumber: e.target.value })
+                                            setError({ ...error, phoneNumber: '' })
+                                        }}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        placeholder="Enter phone number"
+                                        placeholder="Enter mobile number"
                                     />
+                                    {error.phoneNumber && <p className="text-red-500 text-sm">{error.phoneNumber}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Password
+                                        NIC Number
                                     </label>
                                     <input
-                                        type="password"
+                                        type="string"
                                         required
-                                        value={staffForm.password}
-                                        onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
+                                        value={staffForm.nic}
+                                        onChange={(e) => {
+                                            setStaffForm({ ...staffForm, nic: e.target.value })
+                                            setError({ ...error, nic: '' })
+                                        }}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                        placeholder="Enter password"
+                                        placeholder="Enter NIC number"
                                     />
+                                    {error.nic && <p className="text-red-500 text-sm">{error.nic}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Role
-                                    </label>
-                                    <select
-                                        value={staffForm.role}
-                                        onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    >
-                                        <option value="">Select role</option>
-                                        {roles.map(role => (
-                                            <option key={role._id} value={role.type}>
-                                                {role.type.replace(/_/g, ' ')}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Assign to Parking Area
+                                        Select Parking Area
                                     </label>
                                     <select
                                         value={staffForm.parkingAreaId}
-                                        onChange={(e) => setStaffForm({ ...staffForm, parkingAreaId: e.target.value })}
+                                        onChange={(e) => {
+                                            setStaffForm({ ...staffForm, parkingAreaId: e.target.value })
+                                            setError({ ...error, parkingAreaId: '' })
+                                        }}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        required
+                                    >
+                                        <option value="">Select parking area</option>
+                                        {parkingAreas.map(area => (
+                                            <option key={area._id} value={area._id} onClick={() => setError({ ...error, parkingAreaId: '' })}>
+                                                {area.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {error.parkingAreaId && <p className="text-red-500 text-sm">{error.parkingAreaId}</p>}
+                                </div>
+                            </div>
+                            <div className="flex justify-end space-x-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddStaffModal(false)}
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+
+                                    className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    {submitting ? 'Adding...' : 'Add Staff Member'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {showselectPrkingAreaModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-gray-800">Assign Staff Member</h2>
+                            <button
+                                onClick={() => setShowselectPrkingAreaModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Message Section */}
+                        {showMessage && (<div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-blue-800 text-sm">
+                                Staff member with email <strong>{email}</strong> already exists. Please select a parking area to assign them to.
+                            </p>
+                        </div>)}
+
+                        <form onSubmit={updateStaff}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Select Parking Area
+                                    </label>
+                                    <select
+                                        value={staffForm.parkingAreaId}
+                                        onChange={(e) => setStaffForm(prev => ({ ...prev, parkingAreaId: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        required
                                     >
                                         <option value="">Select parking area</option>
                                         {parkingAreas.map(area => (
@@ -535,23 +589,34 @@ const ParkingAreaHomePage = () => {
                             <div className="flex justify-end space-x-3 mt-6">
                                 <button
                                     type="button"
-                                    onClick={() => setShowStaffModal(false)}
-                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                                    onClick={() => setShowselectPrkingAreaModal(false)}
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={submittingStaff}
-                                    className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={submitting}
+                                    className="px-4 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    {submittingStaff ? 'Adding...' : 'Add Staff Member'}
+                                    {submitting ? 'Assigning...' : 'Assign Staff Member'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+            <ConfirmationPopup
+                isOpen={showConfirmationPopup}
+                onClose={() => setShowConfirmationPopup(false)}
+                onConfirm={() => {
+                    updateUser({ id: selectedStaffId, removeRole: roles.find(role => role.type === 'PARKING_MANAGER')?._id, parkingAreaId: null })
+                    setShowConfirmationPopup(false);
+                }}
+                title="Confirmation"
+                message="Are you sure you want to remove this staff member?"
+            />
+
 
             <ToastContainer />
         </div>

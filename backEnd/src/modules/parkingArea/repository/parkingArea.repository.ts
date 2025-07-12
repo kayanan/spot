@@ -35,8 +35,14 @@ export const getParkingAreaById = async (id: string) => {
   return await ParkingAreaDTO.findOne({ _id: id, isDeleted: false }).populate('province city district', 'name').populate('managerIds ownerId', 'firstName lastName email phoneNumber').populate('parkingSubscriptionPaymentId', 'amount subscriptionEndDate subscriptionStartDate');
 };
 
-export const getAllParkingAreas = async () => {
-  return await ParkingAreaDTO.find({ isDeleted: false });
+export const getAllParkingAreas = async (query: any,page:number,limit:number) => {
+  const skip = (page - 1) * limit;
+  const total = await ParkingAreaDTO.countDocuments({ isDeleted: { $ne: true }, ...query });
+  const parkingAreas = await ParkingAreaDTO.find({ isDeleted: { $ne: true }, ...query }).skip(skip).limit(limit);
+  return {
+    data: parkingAreas,
+    total: total
+  };
 };
 
 export const getActiveParkingAreas = async (coords: { lng: number, lat: number },radius:number=10000): Promise<ParkingAreaModel[]> => {

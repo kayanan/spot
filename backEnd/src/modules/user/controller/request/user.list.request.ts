@@ -6,4 +6,8 @@ export interface UserListRequest extends ListRequest {
   role?: string;
   search?: string;
   isDeleted?: string;
+  parkingOwnerId?: string;
+  parkingAreaId?: string;
+  page?: number;
+  limit?: number;
 }

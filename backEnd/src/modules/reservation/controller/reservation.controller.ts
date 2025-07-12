@@ -195,8 +195,8 @@ export const getAllReservationsHandler = async (req: Request, res: Response) => 
 
 export const getReservationsByUserHandler = async (req: Request, res: Response) => {
   try {
-    
-    const reservations = await getReservationsByUserService(req.query as unknown as { userId: string, status: string, paymentStatus: string, startDate: string, endDate: string, searchTerm: string, page: number, limit: number ,isParked:boolean});
+    const { userId } = req.params;
+    const reservations = await getReservationsByUserService(req.query as unknown as { status: string, paymentStatus: string, startDate: string, endDate: string, searchTerm: string, page: number, limit: number ,isParked:boolean},userId);
     res.status(200).json({
       success: true,
       count: reservations.count,

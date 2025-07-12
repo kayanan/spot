@@ -32,6 +32,7 @@ const ListParkingSlots = ({ slots, fetchParkingSlots, parkingArea }) => {
     const [searchReservation, setSearchReservation] = useState("");
     const [filteredSlots, setFilteredSlots] = useState(slots);
     // Group slots by vehicle type
+    console.log(parkingArea,"parkingArea");
     useEffect(() => {
 
         if (searchReservation) {
@@ -396,7 +397,7 @@ const ListParkingSlots = ({ slots, fetchParkingSlots, parkingArea }) => {
                                 <div className='flex items-center gap-2'>
                                     <h3 className="text-xl font-bold mb-3 text-cyan-700 border-l-2 border-gray-400 pl-4">Price: </h3>
                                     <span className="text-cyan-700 font-bold text-3xl mb-3">{slots[0].slotPrice ? `Rs.${slots[0].slotPrice}/hr` : 'N/A'}</span>
-                                    <button
+                                   {authState.privilege !== "PARKING_MANAGER" && (<button
                                         className="bg-cyan-700 text-white px-4 py-2 rounded-md mb-3 flex items-center gap-2 hover:scale-110 transition-transform duration-200 ease-in-out bg-cyan-700"
                                         onClick={() => {
                                             setIsConfirmationPopupOpen(true)
@@ -404,7 +405,7 @@ const ListParkingSlots = ({ slots, fetchParkingSlots, parkingArea }) => {
                                         }}
                                     >
                                         <FaEdit />
-                                    </button>
+                                    </button>)}
                                 </div>
 
                             </div>
@@ -474,7 +475,7 @@ const ListParkingSlots = ({ slots, fetchParkingSlots, parkingArea }) => {
                             icon: <FaTimes />,
                             onClick: () => handleStatusUpdate({data:{ isActive: false },type:"inactive"})
                         } : {},
-                        !selectedSlot?.isActive ? {
+                        (!selectedSlot?.isActive && parkingArea?.parkingSubscriptionPaymentId?.subscriptionEndDate && dayjs(parkingArea.parkingSubscriptionPaymentId.subscriptionEndDate).isAfter(dayjs())) ? {
                             text: "Set Active",
                             variant: "success",
                             icon: <FaCheck />,

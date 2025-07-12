@@ -320,7 +320,7 @@ export const AuthProvider = ({ children }) => {
         { email: username, password },
         { withCredentials: true }
       );
-
+console.log(data, "data");
       const baseUser = {
         userId: data.userId,
         firstName: data.firstName,
@@ -328,6 +328,7 @@ export const AuthProvider = ({ children }) => {
         email: data.email,
         roles: data.roles,
         mobileNumber: data?.mobileNumber || "",
+        parkingAreaId: data?.parkingAreaId || "",
       };
       if (data.roles.length > 1) {
         setAuthState({

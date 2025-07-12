@@ -8,7 +8,8 @@ function addMinute(m: number): Date {
 }
 
 function pageSkip(skip: number, limit: number) {
-  return skip == 0 ? 0 : skip * limit;
+  const pageSkip = skip - 1;
+  return pageSkip == 0 ? 0 : pageSkip * limit;
 }
 
 const HelperUtil = {

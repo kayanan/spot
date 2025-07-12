@@ -8,7 +8,7 @@ import { useAuth } from "../../../../context/AuthContext";
 
 const ViewParkingArea = () => {
     const { id } = useParams();
-    const parkingOwnerId = useLocation().state.parkingOwnerId;
+    const parkingOwnerId = useLocation().state?.parkingOwnerId || null;
     const [slots, setSlots] = useState(useLocation().state?.slot || []);
     const { authState } = useAuth();
     const [parkingArea, setParkingArea] = useState(null);
@@ -81,10 +81,10 @@ const ViewParkingArea = () => {
     return (
         <div className="container mx-auto p-6">
             {/* Back Button */}
-            <Link to={authState.privilege === "ADMIN" ? `/owner/view/${parkingOwnerId}` : authState.privilege === "PARKING_OWNER" ? `/parking-area-home` : `/dashboard`} className="inline-flex items-center text-gray-600 hover:text-cyan-600 mb-6">
+            {authState.privilege !== "PARKING_MANAGER" && (<Link to={authState.privilege === "ADMIN" ? `/owner/view/${parkingOwnerId}` : authState.privilege === "PARKING_OWNER" ? `/parking-area-home` : `/dashboard`} className="inline-flex items-center text-gray-600 hover:text-cyan-600 mb-6">
                 <FaArrowLeft className="mr-2" />
                 Back to Parking Areas
-            </Link>
+            </Link>)}
 
             {/* Header Section */}
             <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
@@ -143,7 +143,7 @@ const ViewParkingArea = () => {
                             </div>
                         </div>
                         
-                        <div className="w-1/3  border-gray-200">
+                       {(authState.privilege === "ADMIN" || authState.privilege === "PARKING_OWNER") && (<div className="w-1/3  border-gray-200">
                             <div className="flex items-center mb-4">
                             <FaCreditCard className="text-cyan-500 mr-3 text-xl" />
                                 <h2 className="text-xl font-semibold">Subscription Details</h2>
@@ -167,7 +167,7 @@ const ViewParkingArea = () => {
                                     More Details
                                 </button>
                             </div>
-                        </div>
+                        </div>)}
 
 
                     </div>

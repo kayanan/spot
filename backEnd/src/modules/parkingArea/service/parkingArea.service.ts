@@ -19,6 +19,8 @@ import { sendSMS } from "../../base/services/sms.service";
 import UserRepository from "../../user/data/repository/user.repository";
 import { BaseResponse } from "../../base/controller/responses/base.repsonse";
 import { ParkingSlotDTO } from "../data/dtos/parkingSlot.dto";
+import { FilterQuery } from "mongoose";
+import mongoose from "mongoose";
 export const createParkingArea = async (parkingAreaData: Partial<CreateUpdateParkingAreaRequest & { longitude: number, latitude: number, slot: { type: string, count: number }[] }>) => {
     const { error } = validateCreateParkingArea(parkingAreaData);
     if (error) {
@@ -90,8 +92,13 @@ export const getParkingAreaById = async (id: string) => {
     return await getParkingAreaByIdRepo(id);
 };
 
-export const getAllParkingAreas = async () => {
-    return await getAllParkingAreasRepo();
+export const getAllParkingAreas = async (query: any) => {
+    const { page = 1, limit = 9999 ,parkingOwner} = query;
+    const filters:FilterQuery<ParkingAreaModel> = {};
+    if(parkingOwner){
+        filters.ownerId = new mongoose.Types.ObjectId(parkingOwner);
+    }
+    return await getAllParkingAreasRepo(filters, page, limit);
 };
 
 // export const getActiveParkingAreas = async () => {

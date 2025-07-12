@@ -8,7 +8,8 @@ import {
   getUsers,
   deleteUser,
   getCurrentUser,
-  changePasswordLoggedIn
+  changePasswordLoggedIn,
+  getUserByEmail
 } from '../../../controller/user.controller';
 import { checkToken } from '@/src/middlewares/check-auth';
 
@@ -25,5 +26,6 @@ userRouter.delete('/:id', deleteUser);
 userRouter.post('/check-duplicate-entry', checkDuplicateEntry);
 userRouter.get('/mobile-number/:mobileNumber', getUserByMobileNumber);
 userRouter.patch('/change-password', checkToken, changePasswordLoggedIn);
+userRouter.get('/email/:email', getUserByEmail);
 
 export default userRouter;

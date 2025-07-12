@@ -26,7 +26,6 @@ import { FaParking } from "react-icons/fa";
 
 
 import { useAuth } from "../context/AuthContext";
-
 // If you're not using Next.js or a framework requiring "use client", remove this line.
 // "use client";
 
@@ -34,7 +33,7 @@ const Sidebar = ({ isOpen }) => {
   const { authState } = useAuth();
   const privilege = authState?.privilege || "";
   const location = useLocation();
-
+console.log(authState, "authState");
   // Track which menus are open using an object: { [menuName]: boolean }
   const [openMenus, setOpenMenus] = useState({});
 
@@ -68,11 +67,11 @@ const Sidebar = ({ isOpen }) => {
       privilege: ["ADMIN", "PARKING_OWNER"],
       children: [
         { name: "Parking Areas", privilege: ["ADMIN", "PARKING_OWNER"], path: "/parking-area-home", icon: MapIcon },
-        { name: "Staffs", privilege: ["ADMIN", "PARKING_OWNER"], path: "/parking-staff", icon: IdentificationIcon },
       ],
     },
-    { name: "Parking Slot", path: `/parking-slot/${authState.user.userId}`, icon: FaParking, privilege: ["ADMIN", "PARKING_MANAGER", "PARKING_OWNER"] },
+    { name: "Parking Slot", path: `/parking-slot/${authState.user.parkingAreaId}`, icon: FaParking, privilege: ["PARKING_MANAGER"] },
     { name: "Customer", path: "/customer-landing-page", icon: UserCircleIcon, privilege: ["ADMIN",  "CUSTOMER"] },
+    { name: "Parking Payments", path: "/reports/parking-payments", icon: CashIcon, privilege: ["PARKING_MANAGER"] },
 
   ];
 

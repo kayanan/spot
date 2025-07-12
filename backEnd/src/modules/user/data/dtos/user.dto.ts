@@ -23,6 +23,7 @@ export interface UserModel extends BaseDTO {
   approvalStatus?: boolean;
   vehicle: Array<{ vehicleNumber: String, isDefault: boolean }>;
   accountDetails?: Array<AccountDetail>;
+  parkingAreaId:ObjectId;
   isDeleted: boolean;
 }
 
@@ -56,6 +57,8 @@ const UserSchema = new Schema<UserModel>(
     lastName: { type: String, required: true },
     nic: {
       type: String,
+      trim: true,
+      toLowerCase: true,
       required: true,
       unique: true,
       match: [
@@ -65,17 +68,19 @@ const UserSchema = new Schema<UserModel>(
     },
     email: {
       type: String,
+      lowercase: true,
+      trim: true,
       required: false,
       unique: true,
       match:
         /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
     },
-    password: { type: String },
-    line1: { type: String, required: true },
-    line2: { type: String },
-    city: { type: String, required: true },
-    district: { type: String, required: true },
-    province: { type: String, required: true },
+    password: { type: String, required: false },
+    line1: { type: String, required: false },
+    line2: { type: String, required: false },
+    city: { type: String, required: false },
+    district: { type: String, required: false },
+    province: { type: String, required: false },
     zipCode: { type: String, required: false },
     phoneNumber:
     {
@@ -98,7 +103,7 @@ const UserSchema = new Schema<UserModel>(
         isDefault: { type: Boolean, required: true, default: false },
       },
     ],
-    
+    parkingAreaId: { type: mongoose.Schema.Types.ObjectId, ref: 'ParkingArea', required: false },
     accountDetails: [
       {
         accountHolderName: { type: String, required: true },

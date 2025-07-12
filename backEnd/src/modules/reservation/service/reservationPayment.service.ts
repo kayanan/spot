@@ -29,6 +29,8 @@ import { updateSlot } from "@/modules/parkingArea/repository/parkingSlot.reposit
 import { getReservationByIdService } from "./reservation.service";
 import { ParkingSlotModel } from "@/modules/parkingArea/data/dtos/parkingSlot.dto";
 import { CreateUpdateParkingSlotRequest } from "@/modules/parkingArea/controller/request/create.parkingSlot.request";
+import { FilterQuery } from "mongoose";
+import mongoose from "mongoose";
 
 export const createReservationPaymentService = async (data: Omit<ReservationPaymentModel, "isDeleted">) => {
   try {
@@ -78,9 +80,49 @@ export const getReservationPaymentByIdService = async (id: string) => {
   }
 };
 
-export const getAllReservationPaymentsService = async () => {
+export const getAllReservationPaymentsService = async (query: any) => {
   try {
-    const reservationPayments = await findAllReservationPayments();
+    const { page = 1, limit = 9999 ,startDate, endDate, parkingArea, paymentStatus, paymentMethod, customer, paidBy, minAmount, maxAmount,reservation,paymentType,parkingOwner} = query;
+    const filters:FilterQuery<ReservationPaymentModel> = {};
+
+    if(startDate){
+      filters.paymentDate = { $gte: new Date(startDate) };
+    }
+    if(endDate){
+      filters.paymentDate = { $lte: new Date(endDate) };
+    }
+    if(paymentStatus){
+      filters.paymentStatus = paymentStatus;
+    }
+    if(paymentMethod){
+      filters.paymentMethod = paymentMethod;
+    }
+    if(customer){
+      filters.customer = customer;
+    }
+    if(paidBy){
+      filters.paidBy = paidBy;
+    }
+    if(minAmount){
+      filters.paymentAmount = { $gte: minAmount };
+    }
+    if(maxAmount){
+      filters.paymentAmount = { $lte: maxAmount };
+    }
+    if(reservation){
+      filters.reservation = reservation;
+    }
+    if(paymentType){
+      filters.paymentType = paymentType;
+    }
+    if(parkingOwner){
+      filters["parkingArea.ownerId"] = new mongoose.Types.ObjectId(parkingOwner);
+    }
+    if(parkingArea){
+      filters["parkingArea._id"] = new mongoose.Types.ObjectId(parkingArea);
+    }
+    console.log(filters,"filters");
+    const reservationPayments = await findAllReservationPayments(filters,page,limit);
     return reservationPayments;
   } catch (error) {
     throw new Error(`Failed to get all reservation payments: ${error instanceof Error ? error.message : 'Unknown error'}`);

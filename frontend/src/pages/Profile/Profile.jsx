@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  FaUser, FaEnvelope, FaPhone, FaIdCard, FaMapMarkerAlt, FaEdit, FaCar, FaCreditCard, FaUniversity, FaKey, FaCheckCircle, FaSave, FaTimes, FaPlus, FaTrash, FaArrowLeft
+  FaEnvelope, FaPhone, FaIdCard, FaMapMarkerAlt, FaEdit, FaCar, FaCreditCard, FaUniversity, FaKey, FaCheckCircle, FaSave, FaTimes, FaPlus, FaTrash, FaArrowLeft
 } from 'react-icons/fa';
 import { useForm, useFieldArray } from 'react-hook-form';
-import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
-import myImage from '../../assets/user.png';  // adjust the path as needed
+import myImage from '../../assets/user.png';
 import { useAuth } from '../../context/AuthContext';
-
+import { getCurrentUser, updateProfile, changePassword } from '../../services/user.service';
 
 // Sri Lankan provinces, districts, and cities data
 const sriLankanData = {
@@ -45,64 +44,37 @@ const sriLankanData = {
   }
 };
 
-const mockUser = {
-  firstName: 'Kayanan',
-  lastName: 'Srikumaran',
-  email: 'kayanann@gmail.com',
-  phoneNumber: '+94 71 234 5678',
-  nic: '1962501761V',
-  profileImage: myImage,
-  isActive: true,
-  approvalStatus: true,
-  address: {
-    line1: 'No. 12, Potpathy road',
-    line2: '',
-    city: 'Jaffna',
-    district: 'Jaffna',
-    province: 'Northern Province'
-  },
-  vehicles: [
-    { vehicleNumber: 'CAG-1234', isDefault: true },
-    { vehicleNumber: 'WP-4567', isDefault: false }
-  ],
-  cardDetails: [
-    {
-      nameOnCard: 'Kayanan Srikumaran',
-      cardNumber: '**** **** **** 1234',
-      expiryDate: '08/27',
-      isDefault: true
-    }
-  ],
-  accountDetails: [
-    {
-      accountHolderName: 'Kayanan Srikumaran',
-      accountNumber: '1234567890',
-      bankName: 'Commercial Bank',
-      branchName: 'Colombo 07',
-      isDefault: true
-    }
-  ]
-};
-
 const Profile = () => {
   const [editMode, setEditMode] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [showVehicleForm, setShowVehicleForm] = useState(false);
-  const [showCardForm, setShowCardForm] = useState(false);
-  const [showBankForm, setShowBankForm] = useState(false);
-  const [profileImage, setProfileImage] = useState(mockUser.profileImage);
   const [previewImage, setPreviewImage] = useState(null);
-  const [user, setUser] = useState(mockUser);
-  const [selectedProvince, setSelectedProvince] = useState(user.address.province);
-  const [selectedDistrict, setSelectedDistrict] = useState(user.address.district);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
   const navigate = useNavigate();
   const { authState } = useAuth();
 
   // Fallback image for when profile image is not available
   const fallbackImage = 'https://via.placeholder.com/112x112/06b6d4/ffffff?text=User';
 
-  const { register, handleSubmit, control, reset, setValue, getValues, formState: { errors, isSubmitting } } = useForm({
-    defaultValues: user
+  const { register, handleSubmit, control, reset, setValue, formState: { isSubmitting } } = useForm({
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      nic: '',
+      line1: '',
+      line2: '',
+      city: '',
+      district: '',
+      province: '',
+      zipCode: '',
+      vehicles: [],
+      cards: [],
+      accountDetails: []
+    }
   });
 
   const { fields: vehicleFields, append: appendVehicle, remove: removeVehicle } = useFieldArray({
@@ -111,12 +83,56 @@ const Profile = () => {
   });
   const { fields: cardFields, append: appendCard, remove: removeCard } = useFieldArray({
     control,
-    name: 'cardDetails',
+    name: 'cards',
   });
   const { fields: accountFields, append: appendAccount, remove: removeAccount } = useFieldArray({
     control,
     name: 'accountDetails',
   });
+
+  // Load user data on component mount
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      const userData = await getCurrentUser();
+      
+      console.log('Raw user data from API:', userData); // Debug log
+      
+      // Transform the data to match our form structure
+      const transformedUser = {
+        firstName: userData.user?.firstName || '',
+        lastName: userData.user?.lastName || '',
+        email: userData.user?.email || '',
+        phoneNumber: userData.user?.phoneNumber || '',
+        nic: userData.user?.nic || '',
+        line1: userData.user?.line1 || '',
+        line2: userData.user?.line2 || '',
+        city: userData.user?.city || '',
+        district: userData.user?.district || '',
+        province: userData.user?.province || '',
+        zipCode: userData.user?.zipCode || '',
+        vehicles: userData.user?.vehicle || [],
+        cards: userData.user?.cards || [],
+        accountDetails: userData.user?.accountDetails || []
+      };
+
+      console.log('Transformed user data:', transformedUser); // Debug log
+
+      setUser(transformedUser);
+      setSelectedProvince(transformedUser.province);
+      setSelectedDistrict(transformedUser.district);
+      reset(transformedUser);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      toast.error('Failed to load user data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = () => {
     setEditMode(true);
@@ -141,16 +157,16 @@ const Profile = () => {
     const province = e.target.value;
     setSelectedProvince(province);
     setSelectedDistrict('');
-    setValue('address.province', province);
-    setValue('address.district', '');
-    setValue('address.city', '');
+    setValue('province', province);
+    setValue('district', '');
+    setValue('city', '');
   };
 
   const handleDistrictChange = (e) => {
     const district = e.target.value;
     setSelectedDistrict(district);
-    setValue('address.district', district);
-    setValue('address.city', '');
+    setValue('district', district);
+    setValue('city', '');
   };
 
   const handlePasswordChange = async (e) => {
@@ -166,15 +182,14 @@ const Profile = () => {
     }
 
     try {
-      await axios.patch(`${import.meta.env.VITE_BACKEND_APP_URL}/v1/user/change-password`, {
+      await changePassword({
         currentPassword,
         newPassword
-      }, { withCredentials: true });
+      });
       toast.success('Password changed successfully!');
       setShowPasswordForm(false);
       e.target.reset();
     } catch (error) {
-      // Extract the actual error message from the backend response
       const errorMessage = error.response?.data?.message || error.message || 'Failed to change password. Please check your current password.';
       toast.error(errorMessage);
       console.log('Password change error:', error.response?.data || error);
@@ -183,18 +198,16 @@ const Profile = () => {
 
   const handleAddVehicle = () => {
     appendVehicle({ vehicleNumber: '', isDefault: false });
-    setShowVehicleForm(true);
   };
 
   const handleAddCard = () => {
     appendCard({
-      nameOnCard: '',
+      cardHolderName: '',
       cardNumber: '',
-      expiryDate: '',
-      cvv: '',
+      expiryMonth: '',
+      expiryYear: '',
       isDefault: false
     });
-    setShowCardForm(true);
   };
 
   const handleAddBank = () => {
@@ -205,46 +218,79 @@ const Profile = () => {
       branchName: '',
       isDefault: false
     });
-    setShowBankForm(true);
   };
-
 
   const onSubmit = async (data) => {
     try {
-      // Prepare form data for file upload
-      const formData = new FormData();
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === 'profileImage' && value instanceof File) {
-          formData.append(key, value);
-        } else if (Array.isArray(value)) {
-          formData.append(key, JSON.stringify(value));
-        } else if (typeof value === 'object' && value !== null) {
-          formData.append(key, JSON.stringify(value));
-        } else {
-          formData.append(key, value);
-        }
-      });
-      // Replace with your actual API endpoint
-      await axios.patch('/api/user/profile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
-      });
+      // Transform data to match backend structure
+      const profileData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        nic: data.nic,
+        line1: data.line1,
+        line2: data.line2,
+        city: data.city,
+        district: data.district,
+        province: data.province,
+        zipCode: data.zipCode,
+        vehicle: data.vehicles, // Backend expects 'vehicle' (singular)
+        cards: data.cards,
+        accountDetails: data.accountDetails
+      };
+
+      console.log('Sending profile data to backend:', profileData); // Debug log
+
+      await updateProfile(profileData);
       toast.success('Profile updated successfully!');
-      setUser({ ...user, ...data, profileImage: previewImage || profileImage });
+      setUser({ ...user, ...data, profileImage: previewImage || myImage });
       setEditMode(false);
       setPreviewImage(null);
+      
+      // Reload user data to get updated information
+      await loadUserData();
     } catch (error) {
-      toast.error('Failed to update profile.');
+      const errorMessage = error.response?.data?.message || 'Failed to update profile.';
+      toast.error(errorMessage);
+      console.error('Profile update error:', error);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Failed to load profile</h2>
+          <button 
+            onClick={loadUserData}
+            className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      {authState.privilege === "CUSTOMER" && (<button className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 flex items-center ml-40 mt-4 w-60 h-12" onClick={() => {
-        navigate('/dashboard');
-      }}>
-        <FaArrowLeft className="mr-2" /> Back to Dashboard
-      </button>)}
+      {authState.privilege === "CUSTOMER" && (
+        <button 
+          className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 flex items-center ml-40 mt-4 w-60 h-12" 
+          onClick={() => navigate('/dashboard')}
+        >
+          <FaArrowLeft className="mr-2" /> Back to Dashboard
+        </button>
+      )}
 
       <div className="max-w-7xl w-full mx-auto bg-white rounded-2xl shadow-lg p-8 border border-gray-200 mt-8 mb-8 transition-all duration-300">
 
@@ -252,7 +298,7 @@ const Profile = () => {
         <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-8 mb-8">
           <div className="relative">
             <img
-              src={previewImage || profileImage || fallbackImage}
+              src={previewImage || myImage || fallbackImage}
               alt="Profile"
               className="w-28 h-28 rounded-full border-4 border-cyan-300 object-cover shadow-md"
               onError={(e) => {
@@ -344,7 +390,7 @@ const Profile = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 1</label>
                       <input
                         type="text"
-                        {...register('address.line1', { required: true })}
+                        {...register('line1', { required: true })}
                         placeholder="Enter address line 1"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
                       />
@@ -353,7 +399,7 @@ const Profile = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
                       <input
                         type="text"
-                        {...register('address.line2')}
+                        {...register('line2')}
                         placeholder="Enter address line 2 (optional)"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
                       />
@@ -363,7 +409,7 @@ const Profile = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Province</label>
                       <select
-                        {...register('address.province', { required: true })}
+                        {...register('province', { required: true })}
                         value={selectedProvince}
                         onChange={handleProvinceChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
@@ -377,7 +423,7 @@ const Profile = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
                       <select
-                        {...register('address.district', { required: true })}
+                        {...register('district', { required: true })}
                         value={selectedDistrict}
                         onChange={handleDistrictChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
@@ -392,7 +438,7 @@ const Profile = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
                       <select
-                        {...register('address.city', { required: true })}
+                        {...register('city', { required: true })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
                         disabled={!selectedDistrict}
                       >
@@ -405,11 +451,212 @@ const Profile = () => {
                   </div>
                 </div>
 
+                {/* Vehicles Section */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FaCar className="text-cyan-600 mr-2" /> Vehicles
+                  </h3>
+                  {vehicleFields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Number</label>
+                        <input
+                          type="text"
+                          {...register(`vehicles.${index}.vehicleNumber`, { required: true })}
+                          placeholder="Enter vehicle number"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            {...register(`vehicles.${index}.isDefault`)}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Default</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeVehicle(index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {editMode && (
+                    <button
+                      type="button"
+                      onClick={handleAddVehicle}
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-600 transition duration-150"
+                    >
+                      <FaPlus className="mr-2" /> Add Vehicle
+                    </button>
+                  )}
+                </div>
+
+                {/* Cards Section */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FaCreditCard className="text-cyan-600 mr-2" /> Cards
+                  </h3>
+                  {cardFields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Card Holder Name</label>
+                        <input
+                          type="text"
+                          {...register(`cards.${index}.cardHolderName`, { required: true })}
+                          placeholder="Enter card holder name"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Card Number</label>
+                        <input
+                          type="text"
+                          {...register(`cards.${index}.cardNumber`, { required: true })}
+                          placeholder="Enter card number"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Month</label>
+                        <input
+                          type="text"
+                          {...register(`cards.${index}.expiryMonth`, { required: true })}
+                          placeholder="MM"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Year</label>
+                        <input
+                          type="text"
+                          {...register(`cards.${index}.expiryYear`, { required: true })}
+                          placeholder="YY"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            {...register(`cards.${index}.isDefault`)}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Default</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeCard(index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {editMode && (
+                    <button
+                      type="button"
+                      onClick={handleAddCard}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-600 transition duration-150"
+                    >
+                      <FaPlus className="mr-2" /> Add Card
+                    </button>
+                  )}
+                </div>
+
+                {/* Bank Accounts Section */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FaUniversity className="text-cyan-600 mr-2" /> Bank Accounts
+                  </h3>
+                  {accountFields.map((field, index) => (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Account Holder Name</label>
+                        <input
+                          type="text"
+                          {...register(`accountDetails.${index}.accountHolderName`, { required: true })}
+                          placeholder="Enter account holder name"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                        <input
+                          type="text"
+                          {...register(`accountDetails.${index}.accountNumber`, { required: true })}
+                          placeholder="Enter account number"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                        <input
+                          type="text"
+                          {...register(`accountDetails.${index}.bankName`, { required: true })}
+                          placeholder="Enter bank name"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Branch Name</label>
+                        <input
+                          type="text"
+                          {...register(`accountDetails.${index}.branchName`, { required: true })}
+                          placeholder="Enter branch name"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition duration-150"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            {...register(`accountDetails.${index}.isDefault`)}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium text-gray-700">Default</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeAccount(index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {editMode && (
+                    <button
+                      type="button"
+                      onClick={handleAddBank}
+                      className="bg-purple-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-purple-600 transition duration-150"
+                    >
+                      <FaPlus className="mr-2" /> Add Bank Account
+                    </button>
+                  )}
+                </div>
+
                 <div className="flex gap-3 mt-4">
-                  <button type="submit" className="bg-cyan-600 text-white px-6 py-3 rounded-lg flex items-center hover:bg-cyan-700 transition duration-150">
-                    <FaSave className="mr-2" />Save Changes
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="bg-cyan-600 text-white px-6 py-3 rounded-lg flex items-center hover:bg-cyan-700 transition duration-150 disabled:opacity-50"
+                  >
+                    <FaSave className="mr-2" />
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </button>
-                  <button type="button" onClick={handleCancel} className="bg-gray-300 text-gray-800 px-6 py-3 rounded-lg flex items-center hover:bg-gray-400 transition duration-150">
+                  <button 
+                    type="button" 
+                    onClick={handleCancel} 
+                    className="bg-gray-300 text-gray-800 px-6 py-3 rounded-lg flex items-center hover:bg-gray-400 transition duration-150"
+                  >
                     <FaTimes className="mr-2" />Cancel
                   </button>
                 </div>
@@ -438,8 +685,8 @@ const Profile = () => {
               <span className="font-medium text-gray-700">Address</span>
             </div>
             <div className="text-gray-900">
-              {user.address.line1}, {user.address.line2},<br />
-              {user.address.city}, {user.address.district}, {user.address.province}
+              {user.line1}, {user.line2 && `${user.line2},`}<br />
+              {user.city}, {user.district}, {user.province}
             </div>
           </div>
         </div>
@@ -450,20 +697,16 @@ const Profile = () => {
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <FaCar className="text-cyan-600 mr-2" /> Vehicles
             </h3>
-            <button
-              onClick={handleAddVehicle}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-600 transition duration-150"
-            >
-              <FaPlus className="mr-2" /> Add Vehicle
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {user.vehicles.map((v, idx) => (
-              <div key={idx} className={`px-4 py-2 rounded-lg border ${v.isDefault ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-200'}`}>
-                <span className="font-medium">{v.vehicleNumber}</span>
-                {v.isDefault && <span className="ml-2 text-xs text-green-600">(Default)</span>}
-              </div>
-            ))}
+            {user.vehicles && user.vehicles.length > 0 ? (
+              user.vehicles.map((v, idx) => (
+                <div key={idx} className={`px-4 py-2 rounded-lg border ${v.isDefault ? 'bg-green-50 border-green-300' : 'bg-gray-50 border-gray-200'}`}>
+                  <span className="font-medium">{v.vehicleNumber}</span>
+                  {v.isDefault && <span className="ml-2 text-xs text-green-600">(Default)</span>}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No vehicles added yet.</p>
+            )}
           </div>
         </div>
 
@@ -473,20 +716,16 @@ const Profile = () => {
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <FaCreditCard className="text-cyan-600 mr-2" /> Card Details
             </h3>
-            <button
-              onClick={handleAddCard}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-600 transition duration-150"
-            >
-              <FaPlus className="mr-2" /> Add Card
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {user.cardDetails.map((c, idx) => (
-              <div key={idx} className={`px-4 py-2 rounded-lg border ${c.isDefault ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-200'}`}>
-                <span className="font-medium">{c.cardNumber}</span> - {c.nameOnCard} (Exp: {c.expiryDate})
-                {c.isDefault && <span className="ml-2 text-xs text-blue-600">(Default)</span>}
-              </div>
-            ))}
+            {user.cards && user.cards.length > 0 ? (
+              user.cards.map((c, idx) => (
+                <div key={idx} className={`px-4 py-2 rounded-lg border ${c.isDefault ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-200'}`}>
+                  <span className="font-medium">**** **** **** {c.cardNumber.slice(-4)}</span> - {c.cardHolderName} (Exp: {c.expiryMonth}/{c.expiryYear})
+                  {c.isDefault && <span className="ml-2 text-xs text-blue-600">(Default)</span>}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No cards added yet.</p>
+            )}
           </div>
         </div>
 
@@ -496,20 +735,16 @@ const Profile = () => {
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <FaUniversity className="text-cyan-600 mr-2" /> Bank Accounts
             </h3>
-            <button
-              onClick={handleAddBank}
-              className="bg-purple-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-purple-600 transition duration-150"
-            >
-              <FaPlus className="mr-2" /> Add Bank Account
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {user.accountDetails.map((a, idx) => (
-              <div key={idx} className={`px-4 py-2 rounded-lg border ${a.isDefault ? 'bg-purple-50 border-purple-300' : 'bg-gray-50 border-gray-200'}`}>
-                <span className="font-medium">{a.accountNumber}</span> - {a.bankName} ({a.branchName})
-                {a.isDefault && <span className="ml-2 text-xs text-purple-600">(Default)</span>}
-              </div>
-            ))}
+            {user.accountDetails && user.accountDetails.length > 0 ? (
+              user.accountDetails.map((a, idx) => (
+                <div key={idx} className={`px-4 py-2 rounded-lg border ${a.isDefault ? 'bg-purple-50 border-purple-300' : 'bg-gray-50 border-gray-200'}`}>
+                  <span className="font-medium">{a.accountNumber}</span> - {a.bankName} ({a.branchName})
+                  {a.isDefault && <span className="ml-2 text-xs text-purple-600">(Default)</span>}
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500">No bank accounts added yet.</p>
+            )}
           </div>
         </div>
 
@@ -567,7 +802,8 @@ const Profile = () => {
         </div>
         <ToastContainer />
       </div>
-    </div>);
+    </div>
+  );
 };
 
 export default Profile;

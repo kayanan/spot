@@ -2,6 +2,14 @@ import mongoose, { ObjectId, Schema, model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { BaseDTO } from '../../../base/data/dtos/base.dto';
 
+export interface CardDetail {
+  cardHolderName: string;
+  cardNumber: string;
+  expiryMonth: string;
+  expiryYear: string;
+  isDefault: boolean;
+}
+
 export interface UserModel extends BaseDTO {
   firstName: string;
   lastName: string;
@@ -23,6 +31,7 @@ export interface UserModel extends BaseDTO {
   approvalStatus?: boolean;
   vehicle: Array<{ vehicleNumber: String, isDefault: boolean }>;
   accountDetails?: Array<AccountDetail>;
+  cards?: Array<CardDetail>;
   parkingAreaId:ObjectId;
   isDeleted: boolean;
 }
@@ -110,6 +119,15 @@ const UserSchema = new Schema<UserModel>(
         accountNumber: { type: String, required: true },
         bankName: { type: String, required: true },
         branchName: { type: String, required: true },
+        isDefault: { type: Boolean, required: true, default: false },
+      },
+    ],
+    cards: [
+      {
+        cardHolderName: { type: String, required: true },
+        cardNumber: { type: String, required: true },
+        expiryMonth: { type: String, required: true },
+        expiryYear: { type: String, required: true },
         isDefault: { type: Boolean, required: true, default: false },
       },
     ],

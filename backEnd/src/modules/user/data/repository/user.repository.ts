@@ -100,7 +100,7 @@ async function saveUser(
 async function findById(id: string): Promise<UserModel | null> {
   const user: UserModel | null = await UserDTO.findById(new mongoose.Types.ObjectId(id))
     .populate('role city district province parkingAreaId', '_id name address parkingOwnerId')
-    .select('-password -__v -createdAt -updatedAt -isDeleted -otp -otpExpiresAt ');
+    .select('firstName lastName email phoneNumber nic line1 line2 city district province zipCode isActive approvalStatus profileImage vehicle cards accountDetails parkingAreaId role');
   return user as UserModel;
 }
 
@@ -209,33 +209,53 @@ async function updatePassword(
   }
 }
 
+// Add or update user
 async function updateUser(
-  userPayload: UpdateUserRequest,
+  data: any,
   userId: string
-): Promise<  string  | null> {
-  const updateUser:any = (await UserDTO.findOneAndUpdate(
-    { _id: userId },
-    userPayload,
-    {
-      new: true,
-    }
-  )) as unknown as UpdateUserRequest;
-
-  return updateUser._id as unknown as string;
+): Promise<string | null> {
+  // If $set contains cards, update them
+  if (data.$set && data.$set.cards) {
+    await UserDTO.updateOne({ _id: userId }, { $set: { cards: data.$set.cards } });
+    delete data.$set.cards;
+  }
+  // If $set contains vehicle, update them
+  if (data.$set && data.$set.vehicle) {
+    await UserDTO.updateOne({ _id: userId }, { $set: { vehicle: data.$set.vehicle } });
+    delete data.$set.vehicle;
+  }
+  // If $set contains accountDetails, update them
+  if (data.$set && data.$set.accountDetails) {
+    await UserDTO.updateOne({ _id: userId }, { $set: { accountDetails: data.$set.accountDetails } });
+    delete data.$set.accountDetails;
+  }
+  // Update other fields
+  const result = await UserDTO.updateOne({ _id: userId }, data);
+  return result.modifiedCount > 0 ? userId : null;
 }
 
 async function adminUpdateUser(
-  userPayload: AdminUpdateUserRequest,
+  data: any,
   userId: string
 ): Promise<string | null> {
-  const adminUpdateUser = (await UserDTO.findOneAndUpdate(
-    { _id: userId },
-    userPayload,
-    {
-      new: true,
-    }
-  )) as unknown as AdminUpdateUserRequest;
-  return adminUpdateUser.id;
+  // If cards present, update them
+  if (data.cards) {
+    await UserDTO.updateOne({ _id: userId }, { $set: { cards: data.cards } });
+    delete data.cards;
+  }
+  // If vehicle present, update them
+  if (data.vehicle) {
+    await UserDTO.updateOne({ _id: userId }, { $set: { vehicle: data.vehicle } });
+    delete data.vehicle;
+  }
+  // If accountDetails present, update them
+  if (data.accountDetails) {
+    await UserDTO.updateOne({ _id: userId }, { $set: { accountDetails: data.accountDetails } });
+    delete data.accountDetails;
+  }
+  // Update other fields
+  const result = await UserDTO.updateOne({ _id: userId }, { $set: data });
+  return result.modifiedCount > 0 ? userId : null;
 }
 
 async function findByRole(role: string): Promise<UserModel | null> {

@@ -228,20 +228,17 @@ const updateUserValidator = (data: any) => {
       line2: z.string({
         invalid_type_error: `Address2 should be a type of 'string'`,
       }).optional().nullable(),
-      city: z.any({
-        required_error: 'City is required', 
-      }).refine((val) =>  Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId for city',
+      city: z.string({
+        required_error: 'City is required',
+        invalid_type_error: `City should be a type of 'string'`,
       }).optional().nullable(),
-      district: z.any({
+      district: z.string({
         required_error: 'District is required',
-      }).refine((val) =>  Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId for district',
+        invalid_type_error: `District should be a type of 'string'`,
       }).optional().nullable(),
-      province: z.any({
+      province: z.string({
         required_error: 'Province is required',
-      }).refine((val) =>  Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId for province',
+        invalid_type_error: `Province should be a type of 'string'`,
       }).optional().nullable(),
       zipCode: z.string({
         invalid_type_error: `ZipCode should be a type of 'string'`,
@@ -286,14 +283,23 @@ const updateUserValidator = (data: any) => {
         }).optional().nullable(),
       })
     ).optional().nullable(),
-    vehicleDetails: z.array(
+    vehicle: z.array(
       z.object({
-        number: z.string(
+        vehicleNumber: z.string(
           {
-            required_error: 'Number is required',
-            invalid_type_error: `Number should be a type of 'string'`,
+            required_error: 'Vehicle number is required',
+            invalid_type_error: `Vehicle number should be a type of 'string'`,
           }
         ),
+        isDefault: z.boolean().optional().nullable(),
+      })
+    ).optional().nullable(),
+    cards: z.array(
+      z.object({
+        cardHolderName: z.string({ required_error: 'Card holder name is required' }),
+        cardNumber: z.string().length(16, { message: 'Card number must be 16 digits' }),
+        expiryMonth: z.string().length(2, { message: 'Expiry month must be 2 digits' }),
+        expiryYear: z.string().length(2, { message: 'Expiry year must be 2 digits' }),
         isDefault: z.boolean().optional().nullable(),
       })
     ).optional().nullable(),
@@ -350,25 +356,19 @@ const adminUpdateUserValidator = (data: any) => {
           required_error: 'City is required',
           invalid_type_error: `City should be a type of 'string'`,
         }
-      ).refine((val) =>  Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId for city',
-      }),
+      ),
       district: z.string(
         {
           required_error: 'District is required',
           invalid_type_error: `District should be a type of 'string'`,
         }
-      ).refine((val) =>  Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId for district',
-      }),
+      ),
       province: z.string(
         {
           required_error: 'Province is required',
           invalid_type_error: `Province should be a type of 'string'`,
         }
-      ).refine((val) =>  Types.ObjectId.isValid(val), {
-        message: 'Invalid ObjectId for province',
-      }),
+      ),
       zipCode: z.string(
         {
           invalid_type_error: `ZipCode should be a type of 'string'`,
@@ -438,6 +438,15 @@ const adminUpdateUserValidator = (data: any) => {
     isDeleted: z.boolean().optional().nullable(),
     otp: z.string().optional().nullable(),
     otpExpiresAt: z.date().optional().nullable(),
+    cards: z.array(
+      z.object({
+        cardHolderName: z.string({ required_error: 'Card holder name is required' }),
+        cardNumber: z.string().length(16, { message: 'Card number must be 16 digits' }),
+        expiryMonth: z.string().length(2, { message: 'Expiry month must be 2 digits' }),
+        expiryYear: z.string().length(2, { message: 'Expiry year must be 2 digits' }),
+        isDefault: z.boolean().optional().nullable(),
+      })
+    ).optional().nullable(),
   });
   return schema.safeParse(data);
 };

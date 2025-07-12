@@ -35,7 +35,7 @@ export interface UpdateUserRequest extends UserRequest {
   phoneNumber?: string;
   profileImage?: string;
   accountDetails?: Array<AccountDetail>;
-  
+  cards?: Array<{ cardHolderName: string; cardNumber: string; expiryMonth: string; expiryYear: string; isDefault: boolean }>;
 }
 
 export interface AdminUpdateUserRequest extends UserRequest {
@@ -56,5 +56,6 @@ export interface AdminUpdateUserRequest extends UserRequest {
   approvalStatus?: boolean;
   profileImage?: string;
   accountDetails?: Array<AccountDetail>;
+  cards?: Array<{ cardHolderName: string; cardNumber: string; expiryMonth: string; expiryYear: string; isDefault: boolean }>;
   isDeleted?: boolean;
 }

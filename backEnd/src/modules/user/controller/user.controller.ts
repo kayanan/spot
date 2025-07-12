@@ -128,17 +128,24 @@ export const getCurrentUser = async (req: any, res: Response) => {
     }
 
     // Get full user details from database
-    const user = await UserService.getUser(userData.userId);
+    const userResponse = await UserService.getUser(userData.userId);
 
-    res.status(200).json({
+    console.log('User response from service:', userResponse); // Debug log
+    console.log('User object from service:', userResponse.user); // Debug log
+
+    const response = {
       status: true,
-      user: user.user,
+      user: userResponse.user,
       userId: userData.userId,
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
       roles: userData.roles,
-    });
+    };
+
+    console.log('Final response being sent:', response); // Debug log
+
+    res.status(200).json(response);
   } catch (error: any) {
     res.status(400).json(errorResponse(error.message));
   }
@@ -211,6 +218,17 @@ export const updateUser = async (req: any, res: Response) => {
   }
 };
 
+export const updateProfile = async (req: any, res: Response) => {
+  try {
+    const userId = req.userData.userId;
+    const response: CreatedUpdatedResponse =
+      await UserService.updateUser(req.body, userId);
+    res.status(200).json(response);
+  } catch (error: any) {
+    res.status(400).json(errorResponse(error.message));
+  }
+};
+
 export const adminUpdateUser = async (
   req: Request,
   res: Response
@@ -240,7 +258,8 @@ export const adminUpdateUser = async (
     
     } catch (error) {
       console.error("Error parsing form data", error);
-      return res.status(400).json({ message: "Invalid form data" });
+      res.status(400).json({ message: "Invalid form data" });
+      return;
     }
 
 

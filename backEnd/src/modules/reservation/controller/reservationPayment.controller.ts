@@ -122,10 +122,11 @@ export const getReservationPaymentByIdHandler = async (req: Request, res: Respon
     const { id } = req.params as { id: string };
     const payment = await getReservationPaymentByIdService(id);
     if (!payment) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         success: false,
         message: "Reservation payment not found" 
       });
+      return;
     }
     res.status(200).json({
       success: true,
@@ -321,10 +322,11 @@ export const getReservationPaymentsByDateRangeHandler = async (req: Request, res
   try {
     const { startDate, endDate } = req.query;
     if (!startDate || !endDate) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         success: false,
         message: "Start date and end date are required" 
       });
+      return;
     }
     const payments = await getReservationPaymentsByDateRangeService(
       new Date(startDate as string),
@@ -355,10 +357,11 @@ export const getReservationPaymentByReferenceNumberHandler = async (req: Request
     const { referenceNumber } = req.params;
     const payment = await getReservationPaymentByReferenceNumberService(referenceNumber);
     if (!payment) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         success: false,
         message: "Reservation payment not found" 
       });
+      return;
     }
     res.status(200).json({
       success: true,
